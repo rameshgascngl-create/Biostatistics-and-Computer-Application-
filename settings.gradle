@@ -1,0 +1,2 @@
+rootProject.name = "Biostatistics Mastery"
+include ':app'
