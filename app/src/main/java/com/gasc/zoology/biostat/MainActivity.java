@@ -4,8 +4,6 @@ import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
@@ -30,9 +28,10 @@ public class MainActivity extends AppCompatActivity {
         webView = findViewById(R.id.webView);
         setupWebView();
 
-        new Handler(Looper.getMainLooper()).postDelayed(() -> {
-            webView.loadUrl("file:///android_asset/index.html");
-        }, 800);
+        // Clear any cached content and load fresh
+        webView.clearCache(true);
+        webView.clearHistory();
+        webView.loadUrl("file:///android_asset/index.html?v=3");
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -42,8 +41,12 @@ public class MainActivity extends AppCompatActivity {
         settings.setDomStorageEnabled(true);
         settings.setAllowFileAccess(true);
         settings.setAllowContentAccess(true);
+        settings.setAllowFileAccessFromFileURLs(true);
+        settings.setAllowUniversalAccessFromFileURLs(true);
         settings.setUseWideViewPort(true);
         settings.setLoadWithOverviewMode(true);
+        settings.setCacheMode(WebSettings.LOAD_NO_CACHE);
+        settings.setDatabaseEnabled(true);
 
         webView.setWebViewClient(new WebViewClient());
         webView.setWebChromeClient(new WebChromeClient());
@@ -68,7 +71,7 @@ public class MainActivity extends AppCompatActivity {
             share.setType("text/plain");
             share.putExtra(Intent.EXTRA_SUBJECT, "Biostatistics Mastery");
             share.putExtra(Intent.EXTRA_TEXT,
-                "Check out Biostatistics Mastery — an offline app for Zoology students!\n" +
+                "Check out Biostatistics Mastery \u2014 an offline app for Zoology students!\n" +
                 "Learn biostatistics with biological examples, calculators, quizzes & Tamil support.");
             startActivity(Intent.createChooser(share, "Share via"));
         }
