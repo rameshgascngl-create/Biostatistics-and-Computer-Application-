@@ -3,9 +3,11 @@ package com.gasc.zoology.biostat;
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Bundle;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebChromeClient;
+import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -28,10 +30,7 @@ public class MainActivity extends AppCompatActivity {
         webView = findViewById(R.id.webView);
         setupWebView();
 
-        // Clear any cached content and load fresh
-        webView.clearCache(true);
-        webView.clearHistory();
-        webView.loadUrl("file:///android_asset/index.html?v=3");
+        webView.loadUrl("file:///android_asset/index.html");
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -39,16 +38,26 @@ public class MainActivity extends AppCompatActivity {
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
-        settings.setAllowFileAccess(true);
-        settings.setAllowContentAccess(true);
-        settings.setAllowFileAccessFromFileURLs(true);
-        settings.setAllowUniversalAccessFromFileURLs(true);
+        settings.setAllowFileAccess(false);
+        settings.setAllowContentAccess(false);
+        settings.setAllowFileAccessFromFileURLs(false);
+        settings.setAllowUniversalAccessFromFileURLs(false);
         settings.setUseWideViewPort(true);
         settings.setLoadWithOverviewMode(true);
-        settings.setCacheMode(WebSettings.LOAD_NO_CACHE);
-        settings.setDatabaseEnabled(true);
 
-        webView.setWebViewClient(new WebViewClient());
+        webView.setWebViewClient(new WebViewClient() {
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                Uri uri = request.getUrl();
+                if ("file".equals(uri.getScheme()) && uri.getPath() != null && uri.getPath().startsWith("/android_asset/")) {
+                    return false;
+                }
+                // Block or open external URLs in browser
+                Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+                try { startActivity(intent); } catch (Exception ignored) {}
+                return true;
+            }
+        });
         webView.setWebChromeClient(new WebChromeClient());
 
         webView.addJavascriptInterface(new NativeBridge(), "Android");
@@ -57,11 +66,13 @@ public class MainActivity extends AppCompatActivity {
     public class NativeBridge {
         @JavascriptInterface
         public void saveProgress(String key, String value) {
-            prefs.edit().putString(key, value).apply();
+            if (key == null || key.length() > 100) return;
+            prefs.edit().putString(key, value != null ? value : "").apply();
         }
 
         @JavascriptInterface
         public String loadProgress(String key) {
+            if (key == null) return "";
             return prefs.getString(key, "");
         }
 
@@ -84,6 +95,7 @@ public class MainActivity extends AppCompatActivity {
 
         @JavascriptInterface
         public void showToast(String message) {
+            if (message == null || message.length() > 200) return;
             runOnUiThread(() -> Toast.makeText(MainActivity.this, message, Toast.LENGTH_SHORT).show());
         }
     }
