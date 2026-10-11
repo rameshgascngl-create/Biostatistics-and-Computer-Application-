@@ -526,6 +526,15 @@ html[data-theme=dark] .badge {
 }
 .problem-item strong { color: var(--brand2); }
 
+
+.continue-card{background:linear-gradient(135deg,#0d5c63,#14919b);color:#fff;padding:20px;border-radius:16px;margin:16px 0;text-align:center}
+.continue-card h3{color:#fff!important;margin:0 0 8px}
+.continue-card button{background:#fff;color:#0d5c63;border:none;padding:12px 24px;border-radius:8px;font-weight:600;cursor:pointer}
+
+.quiz-one{max-width:600px;margin:0 auto}
+.quiz-one .q-nav{display:flex;justify-content:space-between;margin:16px 0}
+.quiz-progress{height:6px;background:#e0e0e0;border-radius:3px;margin:12px 0}
+.quiz-progress-bar{height:100%;background:#14919b;border-radius:3px;transition:width .3s}
 </style>
 <style id="book-style">
 /* Reading typography is scoped to the lesson reader so layout and dark mode are not overridden globally */
@@ -544,7 +553,7 @@ button,.btn,nav button{font-family:system-ui,sans-serif}
 .home-secondary{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.8rem}
 .hero .grid2{align-items:start}
 .hero .stat{padding:.75rem 1rem;min-height:0}
-html[data-theme=dark] .hero h2,html[data-theme=dark] h2,html[data-theme=dark] h3{color:#5eead4!important}
+html[data-theme=dark] .hero h2,html[data-theme=dark] h2{color:#8ec2ff}html[data-theme=dark] .lesson-card h3{color:#eef5ff}
 @media(max-width:980px){header .tools{display:flex!important;flex-wrap:nowrap;overflow-x:auto;gap:.4rem;padding-bottom:.2rem;-webkit-overflow-scrolling:touch}header .topbtn{width:auto!important;flex:0 0 auto;padding:.45rem .8rem;overflow:visible}header .brand p{display:none}}
 </style>
 </head><body><a class="skip" href="#main">Skip to content</a><header><div class="head"><div class="brand"><h1>Biostatistics &amp; Computer Applications</h1><p>Six-unit textbook • Analysis laboratory • English + Tamil • Works offline</p></div><div class="tools"><button aria-label="Go back to the previous screen" class="topbtn" id="backBtn" onclick="navigateBack()" type="button">← Back</button><button aria-controls="side" aria-expanded="false" class="topbtn mobile" id="menuBtn" type="button">☰ Menu</button><button class="topbtn hide-sm" onclick="go('search')" type="button">⌕ Search</button><button class="topbtn" onclick="cycleTheme()" type="button">◐ Theme</button><button class="topbtn hide-sm" onclick="changeText()" type="button">A±</button><button class="topbtn hide-sm" onclick="toggleDyslexia()" type="button">Aa</button><button aria-pressed="false" class="topbtn" id="langBtn" onclick="toggleTamil()" type="button">தமிழ்</button><button class="topbtn hide-sm" onclick="toggleRuler()" type="button">▤ Ruler</button><button class="topbtn" onclick="toggleFocus()" type="button">◫ Focus</button><button class="topbtn" onclick="preparePrint('current')" type="button">⎙ Print</button></div></div></header><div aria-hidden="true" class="overlay" id="overlay"></div><div aria-hidden="true" class="reading-ruler" id="readingRuler"></div><button aria-label="Exit focus mode" class="focus-exit" id="focusExitBtn" onclick="toggleFocus(false)" type="button">× Exit Focus</button><div class="layout"><aside class="side" id="side"><nav id="nav"></nav><div class="progress"><strong>Course progress</strong><div class="track"><div class="fill" id="progressFill"></div></div><small class="muted" id="progressText"></small></div></aside><main id="main">
@@ -1121,5 +1130,24 @@ document.addEventListener('click', function(e) {
     }
   }
 });
+</script>
+
+<script>
+// Phase 2: Continue card on home
+function showContinueCard(){
+  let home = document.getElementById('home');
+  if(!home || document.getElementById('continueCard')) return;
+  let next = LESSONS.find(x => !state.completed.includes(x.id)) || LESSONS[0];
+  let card = document.createElement('div');
+  card.id = 'continueCard';
+  card.className = 'continue-card';
+  card.innerHTML = '<h3>Continue Learning</h3><p>' + (next.sequence||'') + '. ' + next.title + '</p><button onclick="openLesson(\'' + next.id + '\')">Continue</button>';
+  let banner = document.getElementById('onboardBanner');
+  if(banner && banner.nextSibling) banner.parentNode.insertBefore(card, banner.nextSibling);
+  else home.insertBefore(card, home.firstChild);
+}
+// Hook into init
+let origInit = init;
+init = function(){ origInit(); setTimeout(showContinueCard, 100); };
 </script>
 </body></html>
