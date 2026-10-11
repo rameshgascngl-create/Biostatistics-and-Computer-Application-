@@ -179,12 +179,6 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @JavascriptInterface
-        public void openCalculator() {
-            Intent i = new Intent(MainActivity.this, CalculatorActivity.class);
-            startActivity(i);
-        }
-
-        @JavascriptInterface
         public void showToast(String message) {
             if (message == null || message.length() > 200) return;
             runOnUiThread(() -> Toast.makeText(MainActivity.this, message, Toast.LENGTH_SHORT).show());
