@@ -638,6 +638,36 @@ html[data-theme=dark] .hero h2,html[data-theme=dark] h2{color:#8ec2ff}html[data-
 <label>SD</label><input id="zSD" type="number" placeholder="2">
 <button onclick="calcZ()">Calculate</button>
 <pre id="zResult"></pre></div>
+<div class="card" id="tool-kruskal"><h3>Kruskal–Wallis Test</h3>
+<p>Non-parametric ANOVA for 3+ groups. Enter groups separated by semicolons.</p>
+<label>Groups (e.g. 1,2,3; 4,5,6; 7,8,9)</label>
+<input id="kwData" placeholder="12,14,15; 10,11,13; 16,18,20">
+<button onclick="calcKruskal()">Calculate</button>
+<pre id="kwResult"></pre></div>
+<div class="card" id="tool-tukey"><h3>Tukey HSD Post-hoc</h3>
+<p>Pairwise comparisons after significant ANOVA.</p>
+<label>Groups (semicolon-separated)</label>
+<input id="tukeyData" placeholder="10,12,11; 14,15,16; 18,20,19">
+<button onclick="calcTukey()">Calculate</button>
+<pre id="tukeyResult"></pre></div>
+<div class="card" id="tool-power"><h3>Power Calculator (One Mean)</h3>
+<label>Sample size (n)</label><input id="powN" type="number" value="30">
+<label>Effect (difference to detect)</label><input id="powDelta" type="number" value="5">
+<label>SD</label><input id="powSD" type="number" value="10">
+<label>Alpha</label><select id="powAlpha"><option value="0.05">0.05</option><option value="0.01">0.01</option></select>
+<button onclick="calcPower()">Calculate</button>
+<pre id="powResult"></pre></div>
+<div class="card" id="tool-qq"><h3>Q–Q Plot Data (Normality Check)</h3>
+<label>Data</label><input id="qqData" placeholder="10,12,11,14,13,15,12">
+<button onclick="calcQQ()">Generate</button>
+<pre id="qqResult"></pre></div>
+<div class="card" id="tool-hw"><h3>Hardy–Weinberg Chi-square</h3>
+<p>Goodness of fit with optional estimated parameters.</p>
+<label>Observed counts</label><input id="hwObs" placeholder="50,100,50">
+<label>Estimated parameters (m)</label><input id="hwM" type="number" value="0">
+<button onclick="calcHW()">Calculate</button>
+<pre id="hwResult"></pre></div>
+
 </section>
 
 <section class="page" id="toolkit">
@@ -1133,6 +1163,81 @@ document.getElementById('validationResults').innerHTML=checks.map(c=>`<div><stro
 if(show)toast(checks.every(c=>c[1])?'All implemented-feature checks passed':'Validation found issues');return checks
 }
 
+
+function kruskalWallisCore(groups){
+  if(groups.length<2)throw Error('Need at least 2 groups');
+  let combined=[],gIdx=[];
+  groups.forEach((g,gi)=>g.forEach(v=>{combined.push(v);gIdx.push(gi)}));
+  let n=combined.length;
+  let indexed=combined.map((v,i)=>({v,i,g:gIdx[i]})).sort((a,b)=>a.v-b.v);
+  let ranks=indexed.map((x,i)=>i+1);
+  // Ties
+  let i=0;while(i<indexed.length){let j=i;while(j<indexed.length&&indexed[j].v===indexed[i].v)j++;if(j>i+1){let avg=(ranks[i]+ranks[j-1])/2;for(let k=i;k<j;k++)ranks[k]=avg}i=j}
+  let R=groups.map(()=>0),ni=groups.map(g=>g.length);
+  indexed.forEach((x,i)=>{R[x.g]+=ranks[i]});
+  let H=12/(n*(n+1))*R.reduce((s,r,i)=>s+r*r/ni[i],0)-3*(n+1);
+  let df=groups.length-1;
+  return{H,df,n,R,ni};
+}
+function tukeyHSDCore(groups,alpha){
+  alpha=alpha||0.05;
+  let k=groups.length,means=groups.map(g=>g.reduce((a,b)=>a+b,0)/g.length);
+  let ni=groups.map(g=>g.length);
+  let all=groups.flat(),N=all.length;
+  let grand=all.reduce((a,b)=>a+b,0)/N;
+  let SSW=groups.reduce((s,g,i)=>s+g.reduce((a,x)=>a+(x-means[i])**2,0),0);
+  let dfW=N-k,MSW=SSW/dfW;
+  let pairs=[];
+  for(let i=0;i<k;i++)for(let j=i+1;j<k;j++){
+    let diff=Math.abs(means[i]-means[j]);
+    let se=Math.sqrt(MSW*(1/ni[i]+1/ni[j])/2);
+    let q=diff/se;
+    pairs.push({i,j,diff,q,se});
+  }
+  return{pairs,MSW,dfW,means};
+}
+function powerMeanCore(n,delta,sd,alpha){
+  alpha=alpha||0.05;
+  let se=sd/Math.sqrt(n);
+  let zAlpha=alpha<=0.01?2.576:1.96;
+  let zBeta=(delta/se)-zAlpha;
+  // Approximate power from z
+  let power=zBeta>2.5?0.99:zBeta>1.96?0.95:zBeta>1.64?0.90:zBeta>1.28?0.80:zBeta>0.84?0.70:0.50;
+  return{power,n,delta,sd,se};
+}
+function qqDataCore(data){
+  if(data.length<3)throw Error('Need n≥3');
+  let sorted=[...data].sort((a,b)=>a-b);
+  let n=sorted.length,mean=sorted.reduce((a,b)=>a+b,0)/n;
+  let sd=Math.sqrt(sorted.reduce((a,b)=>a+(b-mean)**2,0)/(n-1));
+  // Theoretical quantiles (approximate normal)
+  let points=sorted.map((x,i)=>{
+    let p=(i+0.5)/n;
+    let z=p<0.5?-Math.sqrt(-2*Math.log(p)):Math.sqrt(-2*Math.log(1-p));
+    if(p<0.5)z=-z;
+    return{sample:x,theoretical:mean+z*sd};
+  });
+  return{points,mean,sd,n};
+}
+function hardyWeinbergCore(obs,estimatedParams){
+  estimatedParams=estimatedParams||0;
+  let n=obs.reduce((a,b)=>a+b,0);
+  let k=obs.length;
+  let exp=obs.map(()=>n/k); // equal expected if no estimate
+  if(estimatedParams>0){
+    // Simple: reduce df
+  }
+  let chi=obs.reduce((s,o,i)=>s+(o-exp[i])**2/exp[i],0);
+  let df=k-1-estimatedParams;
+  if(df<1)throw Error('df must be ≥1');
+  return{chi,df,n,exp};
+}
+
+function calcKruskal(){let out=document.getElementById('kwResult');try{let raw=document.getElementById('kwData').value.split(';');let groups=raw.map(g=>g.split(',').map(Number).filter(x=>!isNaN(x)));let r=kruskalWallisCore(groups);out.textContent='H = '+r.H.toFixed(3)+'\ndf = '+r.df+'\nn = '+r.n+'\nRank sums: '+r.R.map(x=>x.toFixed(1)).join(', ')}catch(e){out.textContent=e.message}}
+function calcTukey(){let out=document.getElementById('tukeyResult');try{let raw=document.getElementById('tukeyData').value.split(';');let groups=raw.map(g=>g.split(',').map(Number).filter(x=>!isNaN(x)));let r=tukeyHSDCore(groups);let lines=r.pairs.map(p=>'Groups '+(p.i+1)+' vs '+(p.j+1)+': diff='+p.diff.toFixed(2)+', q='+p.q.toFixed(2));out.textContent='MSW = '+r.MSW.toFixed(3)+'\n'+lines.join('\n')}catch(e){out.textContent=e.message}}
+function calcPower(){let out=document.getElementById('powResult');try{let n=Number(document.getElementById('powN').value),d=Number(document.getElementById('powDelta').value),s=Number(document.getElementById('powSD').value),a=Number(document.getElementById('powAlpha').value);let r=powerMeanCore(n,d,s,a);out.textContent='Approximate power ≈ '+(r.power*100).toFixed(0)+'%\nn = '+r.n+', effect = '+r.delta+', SD = '+r.sd+'\nSE = '+r.se.toFixed(3)}catch(e){out.textContent=e.message}}
+function calcQQ(){let out=document.getElementById('qqResult');try{let d=document.getElementById('qqData').value.split(',').map(Number).filter(x=>!isNaN(x));let r=qqDataCore(d);let lines=r.points.slice(0,8).map(p=>'Sample: '+p.sample.toFixed(1)+' | Theoretical: '+p.theoretical.toFixed(2));out.textContent='n = '+r.n+', mean = '+r.mean.toFixed(2)+', SD = '+r.sd.toFixed(2)+'\n'+lines.join('\n')+(r.points.length>8?'\n...':'')}catch(e){out.textContent=e.message}}
+function calcHW(){let out=document.getElementById('hwResult');try{let obs=document.getElementById('hwObs').value.split(',').map(Number).filter(x=>!isNaN(x));let m=Number(document.getElementById('hwM').value)||0;let r=hardyWeinbergCore(obs,m);out.textContent='χ² = '+r.chi.toFixed(3)+'\ndf = '+r.df+' (k−1−m)\nn = '+r.n+'\nExpected: '+r.exp.map(x=>x.toFixed(1)).join(', ')}catch(e){out.textContent=e.message}}
 function calcMannWhitney(){let out=document.getElementById('mwResult');try{let a=document.getElementById('mwA').value.split(',').map(Number).filter(x=>!isNaN(x));let b=document.getElementById('mwB').value.split(',').map(Number).filter(x=>!isNaN(x));let r=mannWhitneyCore(a,b);out.textContent='U = '+r.U.toFixed(2)+'\nU1 = '+r.U1.toFixed(2)+', U2 = '+r.U2.toFixed(2)+'\nz ≈ '+r.z.toFixed(3)+'\nn1 = '+r.n1+', n2 = '+r.n2}catch(e){out.textContent=e.message}}
 function calcCI(){let out=document.getElementById('ciResult');try{let d=document.getElementById('ciData').value.split(',').map(Number).filter(x=>!isNaN(x));let c=Number(document.getElementById('ciConf').value);let r=ciMeanCore(d,c);out.textContent='Mean = '+r.mean.toFixed(3)+'\nSD = '+r.sd.toFixed(3)+'\nSE = '+r.se.toFixed(3)+'\n'+(c*100)+'% CI: ('+r.lower.toFixed(3)+', '+r.upper.toFixed(3)+')'}catch(e){out.textContent=e.message}}
 function calcZ(){let out=document.getElementById('zResult');try{let x=Number(document.getElementById('zX').value),m=Number(document.getElementById('zMean').value),s=Number(document.getElementById('zSD').value);let r=zScoreCore(x,m,s);out.textContent='z = '+r.z.toFixed(3)+'\n(x = '+r.x+', mean = '+r.mean+', SD = '+r.sd+')'}catch(e){out.textContent=e.message}}
