@@ -10,8 +10,8 @@ android {
         applicationId "com.gasc.zoology.biostat"
         minSdk 23
         targetSdk 34
-        versionCode 4
-        versionName "3.1-phase0"
+        versionCode 5
+        versionName "3.2-complete"
     }
 
     buildTypes {
@@ -22,6 +22,11 @@ android {
         }
         debug {
             minifyEnabled false
+        }
+    }
+    packagingOptions {
+        resources {
+            excludes += ['DebugProbesKt.bin', 'META-INF/*.version']
         }
     }
     compileOptions {
