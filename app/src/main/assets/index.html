@@ -620,6 +620,24 @@ html[data-theme=dark] .hero h2,html[data-theme=dark] h2{color:#8ec2ff}html[data-
 <details><summary>Problem F — Correlation and regression</summary><p>Use the fish length–weight pairs. Report r, p, regression equation and R². Explain why prediction outside the observed X range is extrapolation.</p><div class="tip"><strong>Check:</strong> r ≈ 0.9904; p ≈ 0.000138; Ŷ = −37.7143 + 5.6143X; R² ≈ 0.9808; predicted Y at X = 15 is 46.5.</div></details>
 <details><summary>Problem G — One-way ANOVA</summary><p>Use the three groups in Tool 6. State the omnibus null hypothesis and why a post-hoc procedure is needed after a significant result.</p><div class="tip"><strong>Check:</strong> F(2,12) ≈ 22.615; p ≈ 0.0000850; η² ≈ 0.790. The omnibus result rejects equality of all means but does not specify which pairs differ.</div></details>
 <details><summary>Problem H — Sample-size planning</summary><p>If expected SD is 12 units and the desired 95% margin of error is 3 units, estimate the large-population sample size before and after allowing 10% loss.</p><div class="tip"><strong>Check:</strong> n₀ = (1.96 × 12 / 3)² ≈ 61.47, so round up to 62; allowing 10% loss gives 69.</div></details></div>
+
+<div class="card" id="tool-mannwhitney"><h3>Mann–Whitney U Test</h3>
+<p>Non-parametric test for two independent groups.</p>
+<label>Group A (comma-separated)</label><input id="mwA" placeholder="12,14,15,16">
+<label>Group B</label><input id="mwB" placeholder="10,11,13,14">
+<button onclick="calcMannWhitney()">Calculate</button>
+<pre id="mwResult"></pre></div>
+<div class="card" id="tool-ci"><h3>Confidence Interval for Mean</h3>
+<label>Data</label><input id="ciData" placeholder="12,14,15,16,18">
+<label>Confidence</label><select id="ciConf"><option value="0.95">95%</option><option value="0.99">99%</option></select>
+<button onclick="calcCI()">Calculate</button>
+<pre id="ciResult"></pre></div>
+<div class="card" id="tool-z"><h3>Z-Score Calculator</h3>
+<label>Value (x)</label><input id="zX" type="number" placeholder="15">
+<label>Mean</label><input id="zMean" type="number" placeholder="12">
+<label>SD</label><input id="zSD" type="number" placeholder="2">
+<button onclick="calcZ()">Calculate</button>
+<pre id="zResult"></pre></div>
 </section>
 
 <section class="page" id="toolkit">
@@ -1006,6 +1024,39 @@ function calcEpi2x2(){let out=document.getElementById('epiResult');try{let vals=
 
 function updateSampleSizeFields(){let prop=document.getElementById('ssMode')?.value==='prop',mode=prop?'prop':'mean',lab=document.getElementById('ssScaleLabel'),inp=document.getElementById('ssScale'),mlab=document.getElementById('ssMarginLabel'),margin=document.getElementById('ssMargin'),changed=inp&&inp.dataset.ssMode!==mode;if(lab)lab.textContent=prop?'Expected proportion p (0–1)':'Expected standard deviation';if(mlab)mlab.textContent=prop?'Desired margin of error as a proportion (e.g., 0.05 = ±5 percentage points)':'Desired margin of error (same units as the mean)';if(inp){if(changed)inp.value=prop?'0.5':'12';inp.max=prop?'0.999999':'';inp.dataset.ssMode=mode}if(margin){if(changed)margin.value=prop?'0.05':'3';margin.max=prop?'0.999999':'';margin.step=prop?'0.01':'any'}}
 function sampleSizeCore(mode,z,scale,E,drop=0,N=NaN){if(!['mean','prop'].includes(mode))throw new Error('Unknown sample-size target.');if(!(z>0))throw new Error('Confidence multiplier must be positive.');if(!(drop>=0&&drop<.8))throw new Error('Loss/non-response must be between 0% and 79%.');let n0;if(mode==='mean'){if(!(scale>0))throw new Error('Expected SD must be positive.');if(!(E>0))throw new Error('Margin of error must be positive.');n0=(z*scale/E)**2}else{if(!(scale>0&&scale<1))throw new Error('Expected proportion p must be between 0 and 1.');if(!(E>0&&E<1))throw new Error('For a proportion, enter margin of error as a proportion between 0 and 1; for ±5 percentage points enter 0.05.');n0=z*z*scale*(1-scale)/(E*E)}let finiteN=Number.isFinite(N);if(finiteN&&(!Number.isInteger(N)||N<2))throw new Error('Finite population size must be a whole number of at least 2.');let fpc=finiteN?n0/(1+(n0-1)/N):n0,base=Math.ceil(fpc),adjusted=Math.ceil(fpc/(1-drop));return{mode,z,scale,E,drop,N:finiteN?N:NaN,n0,fpc,base,adjusted,finiteN}}
+
+function mannWhitneyCore(a,b){
+  if(a.length<1||b.length<1)throw Error('Need data in both groups');
+  let combined=a.map(x=>({v:x,g:0})).concat(b.map(x=>({v:x,g:1}))).sort((p,q)=>p.v-q.v);
+  let ranks=combined.map((x,i)=>i+1);
+  // Handle ties by averaging
+  let i=0;while(i<combined.length){let j=i;while(j<combined.length&&combined[j].v===combined[i].v)j++;if(j>i+1){let avg=(ranks[i]+ranks[j-1])/2;for(let k=i;k<j;k++)ranks[k]=avg}i=j}
+  let R1=0;combined.forEach((x,i)=>{if(x.g===0)R1+=ranks[i]});
+  let n1=a.length,n2=b.length,U1=R1-n1*(n1+1)/2,U2=n1*n2-U1,U=Math.min(U1,U2);
+  let mu=n1*n2/2,sigma=Math.sqrt(n1*n2*(n1+n2+1)/12),z=(U-mu)/sigma;
+  return{U,U1,U2,z,R1,n1,n2};
+}
+function wilcoxonCore(d){
+  if(d.length<1)throw Error('Need paired differences');
+  let abs=d.map((x,i)=>({v:Math.abs(x),sign:Math.sign(x),i})).filter(x=>x.v>0).sort((a,b)=>a.v-b.v);
+  let ranks=abs.map((x,i)=>i+1);
+  let Wplus=0,Wminus=0;abs.forEach((x,i)=>{if(x.sign>0)Wplus+=ranks[i];else Wminus+=ranks[i]});
+  let W=Math.min(Wplus,Wminus),n=abs.length;
+  return{W,Wplus,Wminus,n};
+}
+function ciMeanCore(data,conf){
+  if(data.length<2)throw Error('Need n≥2');
+  let n=data.length,mean=data.reduce((a,b)=>a+b,0)/n;
+  let sd=Math.sqrt(data.reduce((a,b)=>a+(b-mean)**2,0)/(n-1));
+  let se=sd/Math.sqrt(n);
+  let tcrit=conf>=0.99?2.576:conf>=0.95?1.96:1.645;
+  if(n<30)tcrit=conf>=0.95?2.0:1.7;
+  return{mean,sd,se,lower:mean-tcrit*se,upper:mean+tcrit*se,conf};
+}
+function zScoreCore(x,mean,sd){
+  if(sd<=0)throw Error('SD must be positive');
+  return{z:(x-mean)/sd,x,mean,sd};
+}
 function calcSampleSize(){let out=document.getElementById('ssResult');try{let mode=document.getElementById('ssMode').value,z=readRequiredNumber('ssConf','Confidence level'),scale=readRequiredNumber('ssScale',mode==='mean'?'Expected SD':'Expected proportion'),E=readRequiredNumber('ssMargin','Margin of error'),drop=readRequiredNumber('ssDrop','Loss/non-response')/100,N=readOptionalNumber('ssPopulation'),r=sampleSizeCore(mode,z,scale,E,drop,N);out.innerHTML=`<div class="headline">Approximate estimation sample size</div><div class="metric-grid">${metric('Unadjusted n',r.base)}${metric('With loss/non-response',r.adjusted)}${metric('Confidence z',fmt(r.z,3))}${r.finiteN?metric('Finite population N',r.N):''}</div><p><strong>Method:</strong> ${mode==='mean'?'n ≈ (z·SD/E)² for estimating a mean.':'n ≈ z²p(1−p)/E² for estimating a proportion.'} ${r.finiteN?'Finite-population correction was applied.':''}</p>${r.finiteN&&r.adjusted>r.N?'<p class="warn-inline">The loss/non-response-adjusted recruitment target exceeds the finite population size. The planned precision is not feasible under these assumptions without revising the design.</p>':''}<p class="method-note"><strong>Important:</strong> This is an estimation formula, not a power calculation. Intervention studies, hypothesis tests, cluster sampling and repeated measures require design-specific power analysis.</p>`}catch(e){out.innerHTML=`<span class="warn-inline">${escapeStat(e.message)}</span>`}}
 
 function renderAnalysisLab(){let tc=document.getElementById('toolCount'),dc=document.getElementById('datasetCount');if(tc)tc.textContent=document.querySelectorAll('#analysislab .calc-card').length;if(dc)dc.textContent=DATASETS.length;updateTFields();updateSampleSizeFields()}
@@ -1081,6 +1132,10 @@ document.getElementById('validationCount').textContent=checks.length;
 document.getElementById('validationResults').innerHTML=checks.map(c=>`<div><strong class="${c[1]?'pass':'fail'}">${c[1]?'PASS':'FAIL'}</strong> — ${c[0]}${c[1]?'':`<pre>${escapeHtml(JSON.stringify(c[2],null,2))}</pre>`}</div><hr>`).join('');
 if(show)toast(checks.every(c=>c[1])?'All implemented-feature checks passed':'Validation found issues');return checks
 }
+
+function calcMannWhitney(){let out=document.getElementById('mwResult');try{let a=document.getElementById('mwA').value.split(',').map(Number).filter(x=>!isNaN(x));let b=document.getElementById('mwB').value.split(',').map(Number).filter(x=>!isNaN(x));let r=mannWhitneyCore(a,b);out.textContent='U = '+r.U.toFixed(2)+'\nU1 = '+r.U1.toFixed(2)+', U2 = '+r.U2.toFixed(2)+'\nz ≈ '+r.z.toFixed(3)+'\nn1 = '+r.n1+', n2 = '+r.n2}catch(e){out.textContent=e.message}}
+function calcCI(){let out=document.getElementById('ciResult');try{let d=document.getElementById('ciData').value.split(',').map(Number).filter(x=>!isNaN(x));let c=Number(document.getElementById('ciConf').value);let r=ciMeanCore(d,c);out.textContent='Mean = '+r.mean.toFixed(3)+'\nSD = '+r.sd.toFixed(3)+'\nSE = '+r.se.toFixed(3)+'\n'+(c*100)+'% CI: ('+r.lower.toFixed(3)+', '+r.upper.toFixed(3)+')'}catch(e){out.textContent=e.message}}
+function calcZ(){let out=document.getElementById('zResult');try{let x=Number(document.getElementById('zX').value),m=Number(document.getElementById('zMean').value),s=Number(document.getElementById('zSD').value);let r=zScoreCore(x,m,s);out.textContent='z = '+r.z.toFixed(3)+'\n(x = '+r.x+', mean = '+r.mean+', SD = '+r.sd+')'}catch(e){out.textContent=e.message}}
 function exportProgress(){let payload={...state,version:VERSION,build:BUILD,exportedAt:new Date().toISOString(),lessonVersions:Object.fromEntries(LESSONS.map(L=>[L.id,1]))};let json=JSON.stringify(payload,null,2);if(window.Android&&Android.startExport){Android.startExport(json);return}let blob=new Blob([json],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='BCA_Master_Progress.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500)}
 function importProgressFromNative(jsonStr){try{let x=JSON.parse(jsonStr);if(!x||typeof x!=='object')throw Error();let valid=id=>LESSONS.some(L=>L.id===id),validFlash=id=>FLASHCARDS.some(F=>F.id===id),cleanNotes={};if(x.notes&&typeof x.notes==='object'&&!Array.isArray(x.notes))Object.entries(x.notes).forEach(([id,value])=>{if(valid(id)&&typeof value==='string')cleanNotes[id]=value.slice(0,20000)});state={version:VERSION,build:BUILD,completed:[...new Set((Array.isArray(x.completed)?x.completed:[]).filter(valid))],bookmarks:[...new Set((Array.isArray(x.bookmarks)?x.bookmarks:[]).filter(valid))],notes:cleanNotes,known:[...new Set((Array.isArray(x.known)?x.known:[]).filter(validFlash))],settings:cleanSettings(x.settings||{})};applySettings();save();updateProgress();renderLessonCards();toast('Progress imported: '+state.completed.length+' completed')}catch(e){toast('Invalid progress data')}}
 function startNativeImport(){if(window.Android&&Android.startImport)Android.startImport()}function importProgress(ev){let f=ev.target.files[0];if(!f)return;if(f.size>1e6){toast('File too large');ev.target.value='';return}let r=new FileReader;r.onload=()=>{try{let x=JSON.parse(r.result);if(!x||typeof x!=='object')throw Error();let valid=id=>LESSONS.some(L=>L.id===id),validFlash=id=>FLASHCARDS.some(F=>F.id===id),cleanNotes={};if(x.notes&&typeof x.notes==='object'&&!Array.isArray(x.notes))Object.entries(x.notes).forEach(([id,value])=>{if(valid(id)&&typeof value==='string')cleanNotes[id]=value.slice(0,20000)});state={version:VERSION,build:BUILD,completed:[...new Set((Array.isArray(x.completed)?x.completed:[]).filter(valid))],bookmarks:[...new Set((Array.isArray(x.bookmarks)?x.bookmarks:[]).filter(valid))],notes:cleanNotes,known:[...new Set((Array.isArray(x.known)?x.known:[]).filter(validFlash))],settings:cleanSettings(x.settings||{})};applySettings();save();updateProgress();renderLessonCards();toast(`Progress imported: ${state.completed.length} completed, ${state.bookmarks.length} bookmarks`)}catch(e){toast('Invalid or incompatible progress file')}ev.target.value=''};r.onerror=()=>toast('Could not read file');r.readAsText(f)}
