@@ -5,19 +5,56 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
+import android.print.PrintAttributes;
+import android.print.PrintDocumentAdapter;
+import android.print.PrintManager;
 import android.webkit.JavascriptInterface;
+import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
+import androidx.activity.OnBackPressedCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
+
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
 
 public class MainActivity extends AppCompatActivity {
     private WebView webView;
     private SharedPreferences prefs;
     private static final String PREFS_NAME = "BiostatProgress";
+    private ValueCallback<Uri[]> filePathCallback;
+    private String pendingExportData;
+
+    private final ActivityResultLauncher<String> importLauncher =
+        registerForActivityResult(new ActivityResultContracts.GetContent(), uri -> {
+            if (uri != null) readAndImport(uri);
+        });
+
+    private final ActivityResultLauncher<String> exportLauncher =
+        registerForActivityResult(new ActivityResultContracts.CreateDocument("application/json"), uri -> {
+            if (uri != null && pendingExportData != null) writeExport(uri, pendingExportData);
+            pendingExportData = null;
+        });
+
+    private final ActivityResultLauncher<Intent> fileChooserLauncher =
+        registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
+            if (filePathCallback == null) return;
+            Uri[] results = null;
+            if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                Uri data = result.getData().getData();
+                if (data != null) results = new Uri[]{data};
+            }
+            filePathCallback.onReceiveValue(results);
+            filePathCallback = null;
+        });
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override
@@ -29,8 +66,23 @@ public class MainActivity extends AppCompatActivity {
 
         webView = findViewById(R.id.webView);
         setupWebView();
+        setupBackHandler();
 
         webView.loadUrl("file:///android_asset/index.html");
+    }
+
+    private void setupBackHandler() {
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                if (webView != null && webView.canGoBack()) {
+                    webView.goBack();
+                } else {
+                    setEnabled(false);
+                    getOnBackPressedDispatcher().onBackPressed();
+                }
+            }
+        });
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -52,15 +104,54 @@ public class MainActivity extends AppCompatActivity {
                 if ("file".equals(uri.getScheme()) && uri.getPath() != null && uri.getPath().startsWith("/android_asset/")) {
                     return false;
                 }
-                // Block or open external URLs in browser
                 Intent intent = new Intent(Intent.ACTION_VIEW, uri);
                 try { startActivity(intent); } catch (Exception ignored) {}
                 return true;
             }
         });
-        webView.setWebChromeClient(new WebChromeClient());
+
+        webView.setWebChromeClient(new WebChromeClient() {
+            @Override
+            public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> callback, FileChooserParams params) {
+                if (filePathCallback != null) filePathCallback.onReceiveValue(null);
+                filePathCallback = callback;
+                Intent intent = params.createIntent();
+                try {
+                    fileChooserLauncher.launch(intent);
+                } catch (Exception e) {
+                    filePathCallback = null;
+                    return false;
+                }
+                return true;
+            }
+        });
 
         webView.addJavascriptInterface(new NativeBridge(), "Android");
+    }
+
+    private void readAndImport(Uri uri) {
+        try (InputStream is = getContentResolver().openInputStream(uri);
+             BufferedReader reader = new BufferedReader(new InputStreamReader(is))) {
+            StringBuilder sb = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) sb.append(line);
+            String json = sb.toString().replace("\\", "\\\\").replace("'", "\\'").replace("\n", "\\n");
+            webView.evaluateJavascript("if(typeof importProgressFromNative==='function')importProgressFromNative('" + json + "');", null);
+            Toast.makeText(this, "Import started", Toast.LENGTH_SHORT).show();
+        } catch (Exception e) {
+            Toast.makeText(this, "Import failed", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void writeExport(Uri uri, String data) {
+        try (OutputStream os = getContentResolver().openOutputStream(uri)) {
+            if (os != null) {
+                os.write(data.getBytes());
+                Toast.makeText(this, "Exported successfully", Toast.LENGTH_SHORT).show();
+            }
+        } catch (Exception e) {
+            Toast.makeText(this, "Export failed", Toast.LENGTH_SHORT).show();
+        }
     }
 
     public class NativeBridge {
@@ -98,14 +189,28 @@ public class MainActivity extends AppCompatActivity {
             if (message == null || message.length() > 200) return;
             runOnUiThread(() -> Toast.makeText(MainActivity.this, message, Toast.LENGTH_SHORT).show());
         }
-    }
 
-    @Override
-    public void onBackPressed() {
-        if (webView != null && webView.canGoBack()) {
-            webView.goBack();
-        } else {
-            super.onBackPressed();
+        @JavascriptInterface
+        public void startImport() {
+            runOnUiThread(() -> importLauncher.launch("application/json"));
+        }
+
+        @JavascriptInterface
+        public void startExport(String jsonData) {
+            if (jsonData == null || jsonData.length() > 500000) return;
+            pendingExportData = jsonData;
+            runOnUiThread(() -> exportLauncher.launch("BCA_Progress.json"));
+        }
+
+        @JavascriptInterface
+        public void startPrint() {
+            runOnUiThread(() -> {
+                PrintManager printManager = (PrintManager) getSystemService(PRINT_SERVICE);
+                if (printManager != null && webView != null) {
+                    PrintDocumentAdapter adapter = webView.createPrintDocumentAdapter("Biostatistics");
+                    printManager.print("Biostatistics Lesson", adapter, new PrintAttributes.Builder().build());
+                }
+            });
         }
     }
 
