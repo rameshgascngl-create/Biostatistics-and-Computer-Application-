@@ -24,10 +24,5 @@
             android:exported="false"
             android:configChanges="orientation|screenSize|keyboardHidden|uiMode|smallestScreenSize|screenLayout|density" />
 
-        <activity
-            android:name=".CalculatorActivity"
-            android:exported="false"
-            android:label="Quick Calculator" />
-
     </application>
 </manifest>
