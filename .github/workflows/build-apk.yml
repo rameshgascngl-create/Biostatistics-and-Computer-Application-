@@ -12,6 +12,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Quality gate — calculator regression tests
+        run: node tests/test_calculators.js app/src/main/assets/index.html
+
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
