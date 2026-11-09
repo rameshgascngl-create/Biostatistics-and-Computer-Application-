@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun FlashcardScreen(content: CourseContent, store: ProgressStore) {
     val ta = store.tamil
@@ -20,7 +21,7 @@ fun FlashcardScreen(content: CourseContent, store: ProgressStore) {
     val unitOf = content.lessons.associate { it.id to it.unit }
     val cards = content.flashcards.filter { unit == 0 || unitOf[it.lesson] == unit }
     val safe = if (cards.isEmpty()) 0 else index.coerceIn(0, cards.size - 1)
-    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             items((0..6).toList()) { u ->
                 FilterChip(selected = unit == u, onClick = { unit = u; index = 0; flipped = false },
@@ -42,7 +43,7 @@ fun FlashcardScreen(content: CourseContent, store: ProgressStore) {
                 Spacer(Modifier.height(8.dp))
                 Text(tr("Tap the card to flip", "அட்டையைத் திருப்ப தொடவும்"), style = MaterialTheme.typography.labelSmall)
             }
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(onClick = { index = (safe - 1).coerceAtLeast(0); flipped = false }) { Text(tr("← Previous", "← முந்தையது")) }
                 OutlinedButton(onClick = { index = (safe + 1).coerceAtMost(cards.size - 1); flipped = false }) { Text(tr("Next →", "அடுத்தது →")) }
             }
