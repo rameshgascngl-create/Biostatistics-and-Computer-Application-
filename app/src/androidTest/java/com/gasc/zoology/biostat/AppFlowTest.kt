@@ -137,6 +137,31 @@ class AppFlowTest {
         toEnglish(); waitText("Question 1 of 10")
     }
 
+
+    @Test fun homeUnitExpandsIntoActualLessons() {
+        rule.onNodeWithTag("home-scroll").performScrollToNode(hasTestTag("home-unit-toggle-1"))
+        waitTag("home-lesson-U1_T01")
+        tag("home-unit-toggle-1")
+        rule.onAllNodesWithTag("home-lesson-U1_T01").assertCountEquals(0)
+        tag("home-unit-toggle-1")
+        waitTag("home-lesson-U1_T01")
+        tag("home-lesson-U1_T01")
+        waitTag("bookmark")
+        shot("08_home_inline_lesson")
+    }
+
+    @Test fun textbookUnitCollapsesAndRestoresItsLessons() {
+        tab("Lessons")
+        waitTag("lesson-U1_T01")
+        tag("textbook-unit-1")
+        rule.onAllNodesWithTag("lesson-U1_T01").assertCountEquals(0)
+        tag("textbook-unit-1")
+        waitTag("lesson-U1_T01")
+        tag("lesson-U1_T01")
+        waitTag("bookmark")
+        shot("09_textbook_inline_lesson")
+    }
+
     private fun courseContent() = kotlinx.coroutines.runBlocking { ContentRepository.load(InstrumentationRegistry.getInstrumentation().targetContext) }
 
     /** CI emulators are slow and occasionally drop a frame (list scroll miss, Compose harness thread check). Retry one step up to 3 times,
