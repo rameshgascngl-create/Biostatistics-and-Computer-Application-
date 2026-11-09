@@ -37,7 +37,8 @@ private fun sigWord(p: Double, ta: Boolean, alpha: Double = 0.05) =
     else (if (ta) "புள்ளியியல் ரீதியாக முக்கியத்துவம் அற்றது" else "not statistically significant")
 
 private fun decision(p: Double, ta: Boolean) =
-    if (ta) "α = 0.05 மட்டத்தில் முடிவு ${sigWord(p, true)} (p = ${pFmt(p)}); பூஜ்யக் கருதுகோளை ${if (p < 0.05) "நிராகரிக்கலாம்" else "நிராகரிக்க இயலாது"}. இது மாதிரிச் சோதனை அனுமானங்களின் கீழான புள்ளியியல் கூற்று மட்டுமே; உயிரியல் முக்கியத்துவத்தைக் குறிக்காது."
+    if (!p.isFinite()) (if (ta) "இச்சோதனையின் p மதிப்பை வரையறுக்க இயலவில்லை; முக்கியத்துவம் குறித்த முடிவு எடுக்க வேண்டாம்." else "The p-value is undefined for these data; no significance decision can be made.")
+    else if (ta) "α = 0.05 மட்டத்தில் முடிவு ${sigWord(p, true)} (p = ${pFmt(p)}); பூஜ்யக் கருதுகோளை ${if (p < 0.05) "நிராகரிக்கலாம்" else "நிராகரிக்க இயலாது"}. இது மாதிரிச் சோதனை அனுமானங்களின் கீழான புள்ளியியல் கூற்று மட்டுமே; உயிரியல் முக்கியத்துவத்தைக் குறிக்காது."
     else "At α = 0.05 the result is ${sigWord(p, false)} (p = ${pFmt(p)}); the null hypothesis ${if (p < 0.05) "is rejected" else "cannot be rejected"}. This is an inferential statement under the test assumptions, not a statement of biological importance."
 
 private fun histogram(x: List<Double>): Plot.Hist {
