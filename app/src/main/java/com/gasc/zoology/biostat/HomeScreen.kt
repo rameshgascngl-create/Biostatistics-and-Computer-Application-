@@ -130,30 +130,6 @@ fun HomeScreen(
             }
         }
         item {
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                StudyAction(
-                    tr("Browse chapters", "பாடங்களைப் பார்"), tr("Read & revise", "படித்து மீள்பார்வை"),
-                    Color(0xFFE5EEFF), Color(0xFF204E9A), onOpenLessons, Modifier.weight(1f)
-                )
-                StudyAction(
-                    tr("Practice MCQs", "வினா பயிற்சி"), tr("Test your learning", "பயிற்சி செய்து பார்"),
-                    Color(0xFFE2F8EE), Color(0xFF146F52), onOpenQuiz, Modifier.weight(1f)
-                )
-            }
-        }
-        item {
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                StudyAction(
-                    tr("Analysis Lab", "பகுப்பாய்வகம்"), tr("17 statistical tools", "17 புள்ளியியல் கருவிகள்"),
-                    Color(0xFFFFEEDD), Color(0xFF9A5423), onOpenLab, Modifier.weight(1f)
-                )
-                StudyAction(
-                    tr("Your pathway", "கற்றல் பாதை"), tr("All six units", "ஆறு அலகுகள்"),
-                    Color(0xFFF0E8FF), Color(0xFF7547AA), onOpenLessons, Modifier.weight(1f)
-                )
-            }
-        }
-        item {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween) {
                 Column {
@@ -257,6 +233,30 @@ fun HomeScreen(
                         }
                     }
                 }
+            }
+        }
+        item {
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                StudyAction(
+                    tr("Browse chapters", "பாடங்களைப் பார்"), tr("Read & revise", "படித்து மீள்பார்வை"),
+                    Color(0xFFE5EEFF), Color(0xFF204E9A), onOpenLessons, Modifier.weight(1f)
+                )
+                StudyAction(
+                    tr("Practice MCQs", "வினா பயிற்சி"), tr("Test your learning", "பயிற்சி செய்து பார்"),
+                    Color(0xFFE2F8EE), Color(0xFF146F52), onOpenQuiz, Modifier.weight(1f)
+                )
+            }
+        }
+        item {
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                StudyAction(
+                    tr("Analysis Lab", "பகுப்பாய்வகம்"), tr("17 statistical tools", "17 புள்ளியியல் கருவிகள்"),
+                    Color(0xFFFFEEDD), Color(0xFF9A5423), onOpenLab, Modifier.weight(1f)
+                )
+                StudyAction(
+                    tr("Your pathway", "கற்றல் பாதை"), tr("All six units", "ஆறு அலகுகள்"),
+                    Color(0xFFF0E8FF), Color(0xFF7547AA), onOpenLessons, Modifier.weight(1f)
+                )
             }
         }
         item {
