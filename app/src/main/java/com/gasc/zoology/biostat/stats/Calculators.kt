@@ -366,7 +366,8 @@ fun mannWhitney(a: List<Double>, b: List<Double>): MannWhitneyResult {
     val u1 = r1 - n1 * (n1 + 1) / 2.0; val u2 = n1.toDouble() * n2 - u1
     val u = min(u1, u2); val mu = n1.toDouble() * n2 / 2
     val sigma = sqrt(n1.toDouble() * n2 / 12 * ((n + 1) - tieSum / (n.toDouble() * (n - 1))))
-    val z = if (sigma > 0) (u - mu) / sigma else Double.NaN
+    if (!(sigma > 0) || !sigma.isFinite()) throw StatException("allIdentical")
+    val z = (u - mu) / sigma
     val p: Double; val method: PMethod
     if (tieSum == 0.0 && n <= 40) {
         val cnt = subsetRankSumCounts(n, n1)
