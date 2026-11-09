@@ -15,6 +15,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
@@ -22,6 +23,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -61,139 +63,277 @@ fun LessonListScreen(content: CourseContent, store: ProgressStore, onOpen: (Stri
     }
 }
 
+/**
+ * A native two-mode textbook: the default book mode shows one complete teaching section
+ * per page, and the alternative continuous mode preserves the full expandable chapter.
+ * Both use the same ChapterPage data; no content is duplicated or silently omitted.
+ */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun LessonScreen(content: CourseContent, l: Lesson, store: ProgressStore, onOpen: (String) -> Unit) {
+fun LessonScreen(
+    content: CourseContent, l: Lesson, store: ProgressStore,
+    onOpen: (String) -> Unit, onOpenContents: () -> Unit = {}
+) {
     val ta = store.tamil
-    val t = content.tamilLessons[l.id]
+    val translation = content.tamilLessons[l.id]
     val idx = content.lessons.indexOfFirst { it.id == l.id }
-    val prev = content.lessons.getOrNull(idx - 1)
+    val previous = content.lessons.getOrNull(idx - 1)
     val next = content.lessons.getOrNull(idx + 1)
-    LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        item {
+    val title = if (ta) translation?.title.orEmpty().ifBlank { l.title } else l.title
+    val pages = remember(content, l.id, ta) { chapterPages(content, l, ta) }
+    var bookMode by rememberSaveable(l.id) { mutableStateOf(true) }
+    var requestedPage by rememberSaveable(l.id) { mutableIntStateOf(0) }
+    val totalPages = pages.size + 1 // Last page is the workbook: notes and chapter completion.
+    val activePage = requestedPage.coerceIn(0, totalPages - 1)
+    val listState = rememberLazyListState()
+    LaunchedEffect(bookMode, activePage, l.id, ta) {
+        listState.scrollToItem(0)
+    }
+    LazyColumn(
+        state = listState,
+        modifier = Modifier.fillMaxWidth().background(Color(0xFFF4F0E8)).testTag("reader-scroll"),
+        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(13.dp)
+    ) {
+        item(key = "chapter-cover") {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(21.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF244D92))
+                shape = RoundedCornerShape(18.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF1A4A7D))
             ) {
                 Column(
-                    Modifier.fillMaxWidth()
-                        .background(Brush.linearGradient(listOf(Color(0xFF15345F), Color(0xFF245CA7), Color(0xFF087C80))))
-                        .padding(20.dp)
+                    Modifier.fillMaxWidth().background(
+                        Brush.linearGradient(listOf(
+                            Color(0xFF12365F), Color(0xFF245FA0), Color(0xFF087982)
+                        ))
+                    ).padding(19.dp)
                 ) {
                     Text(
-                        tr("UNIT ${l.unit}  •  CHAPTER ${idx + 1} OF ${content.lessons.size}",
-                           "அலகு ${l.unit}  •  பாடம் ${idx + 1} / ${content.lessons.size}"),
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold, color = Color(0xFFCAF5EE)
-                    )
-                    Spacer(Modifier.height(10.dp))
-                    Text(
-                        if (ta) t?.title.orEmpty().ifBlank { l.title } else l.title,
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold, color = Color.White
+                        tr("BIOSTATISTICS • TEXTBOOK", "உயிரிப் புள்ளியியல் • பாடநூல்"),
+                        color = Color(0xFFD2F4F2),
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.labelLarge
                     )
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        if (ta) "${l.study.read} நிமிட வாசிப்பு · ${l.study.practice} நிமிடப் பயிற்சி"
-                        else "${l.study.read} min read · ${l.study.practice} min practice",
-                        style = MaterialTheme.typography.bodyMedium, color = Color(0xFFE2EEFA)
+                        tr("UNIT ${l.unit}  •  CHAPTER ${idx + 1} / ${content.lessons.size}",
+                            "அலகு ${l.unit}  •  பாடம் ${idx + 1} / ${content.lessons.size}"),
+                        color = Color(0xFFE1ECFF),
+                        style = MaterialTheme.typography.bodySmall
                     )
-                    Spacer(Modifier.height(14.dp))
-                    val marked = l.id in store.bookmarks
-                    OutlinedButton(
-                        onClick = { store.toggleBookmark(l.id) },
-                        modifier = Modifier.heightIn(min = 48.dp).testTag("bookmark"),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
-                        border = BorderStroke(1.dp, Color.White.copy(alpha = .7f))
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        title,
+                        color = Color.White, fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.headlineSmall,
+                        lineHeight = MaterialTheme.typography.headlineSmall.lineHeight
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        if (ta) "${l.study.read} நிமிட வாசிப்பு  •  ${l.study.practice} நிமிடப் பயிற்சி"
+                        else "${l.study.read} min read  •  ${l.study.practice} min practice",
+                        color = Color(0xFFE2EEFA),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    Spacer(Modifier.height(11.dp))
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        Text(if (marked) tr("★ Bookmarked", "★ புத்தகக்குறியிடப்பட்டது")
-                             else tr("☆ Bookmark this lesson", "☆ பாடத்தைக் குறியிடு"),
-                            fontWeight = FontWeight.Bold)
+                        OutlinedButton(
+                            onClick = onOpenContents,
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                            border = BorderStroke(1.dp, Color.White.copy(alpha = .67f)),
+                            modifier = Modifier.heightIn(min = 48.dp).testTag("reader-contents")
+                        ) { Text(tr("Contents", "பொருளடக்கம்"), fontWeight = FontWeight.Bold) }
+                        OutlinedButton(
+                            onClick = { store.toggleBookmark(l.id) },
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                            border = BorderStroke(1.dp, Color.White.copy(alpha = .67f)),
+                            modifier = Modifier.heightIn(min = 48.dp).testTag("bookmark")
+                        ) {
+                            Text(
+                                if (l.id in store.bookmarks)
+                                    tr("★ Bookmarked", "★ புத்தகக்குறியிடப்பட்டது")
+                                else tr("☆ Bookmark", "☆ புத்தகக்குறி"),
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                 }
             }
         }
-        if (ta) { if (t != null) tamilBody(this, t, content, l) } else englishBody(this, l)
-        item {
-            var note by remember(l.id) { mutableStateOf(store.notes[l.id].orEmpty()) }
-            SectionCard(tr("My notes", "என் குறிப்புகள்")) {
-                OutlinedTextField(value = note, onValueChange = { note = it.take(ProgressStore.MAX_NOTE); store.setNote(l.id, note) },
-                    modifier = Modifier.fillMaxWidth().testTag("note"), minLines = 3,
-                    label = { Text(tr("Write a note for this lesson", "இப்பாடத்திற்கான குறிப்பை எழுதுக")) })
+        item(key = "reading-switch") {
+            Column(Modifier.fillMaxWidth()) {
+                Text(
+                    tr("READING STYLE", "வாசிப்பு முறை"),
+                    color = Color(0xFF53657A), fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.labelMedium
+                )
+                Spacer(Modifier.height(4.dp))
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    FilterChip(
+                        selected = bookMode,
+                        onClick = { bookMode = true },
+                        modifier = Modifier.testTag("reader-mode-pages"),
+                        label = { Text(tr("Book pages", "புத்தகப் பக்கங்கள்")) }
+                    )
+                    FilterChip(
+                        selected = !bookMode,
+                        onClick = { bookMode = false },
+                        modifier = Modifier.testTag("reader-mode-continuous"),
+                        label = { Text(tr("Full chapter", "முழுப் பாடம்")) }
+                    )
+                }
             }
         }
-        item {
-            val done = l.id in store.completed
-            Button(onClick = { store.toggleLesson(l.id) }, modifier = Modifier.fillMaxWidth().testTag("complete")) {
-                Text(if (done) tr("Completed — tap to undo", "முடிந்தது — மாற்ற தொடவும்") else tr("Mark lesson as complete", "பாடத்தை முடிந்ததாகக் குறி"))
+        if (bookMode) {
+            item(key = "active-page") {
+                Card(
+                    modifier = Modifier.fillMaxWidth().testTag("reader-page"),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFCF6)),
+                    border = BorderStroke(1.dp, Color(0xFFE0D8CB)),
+                    shape = RoundedCornerShape(15.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                ) {
+                    Column(Modifier.fillMaxWidth().padding(horizontal = 13.dp, vertical = 16.dp)) {
+                        Row(
+                            Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                tr("CHAPTER ${idx + 1}", "பாடம் ${idx + 1}"),
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF335D82),
+                                style = MaterialTheme.typography.labelMedium
+                            )
+                            Text(
+                                tr("PAGE ${activePage + 1} / $totalPages",
+                                    "பக்கம் ${activePage + 1} / $totalPages"),
+                                modifier = Modifier.testTag("reader-page-number"),
+                                color = Color(0xFF375F7B),
+                                style = MaterialTheme.typography.labelMedium
+                            )
+                        }
+                        Spacer(Modifier.height(10.dp))
+                        HorizontalDivider(color = Color(0xFFDFD7CA))
+                        Spacer(Modifier.height(13.dp))
+                        if (activePage < pages.size) {
+                            val section = pages[activePage]
+                            LessonSection(
+                                section.title, initiallyOpenOverride = true
+                            ) {
+                                section.content(this)
+                            }
+                        } else {
+                            ChapterNotebook(l, store)
+                            Spacer(Modifier.height(12.dp))
+                            ChapterCompletion(l, store)
+                        }
+                        Spacer(Modifier.height(16.dp))
+                        HorizontalDivider(color = Color(0xFFDFD7CA))
+                        Spacer(Modifier.height(10.dp))
+                        Text(
+                            tr("Biostatistics Mastery • Page ${activePage + 1}",
+                                "உயிரிப் புள்ளியியல் • பக்கம் ${activePage + 1}"),
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.Center,
+                            color = Color(0xFF68758A),
+                            style = MaterialTheme.typography.labelSmall
+                        )
+                    }
+                }
             }
-            Spacer(Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (prev != null) OutlinedButton(onClick = { onOpen(prev.id) }) { Text(tr("← Previous", "← முந்தையது")) }
-                if (next != null) OutlinedButton(onClick = { onOpen(next.id) }) { Text(tr("Next →", "அடுத்தது →")) }
+            item(key = "page-navigation") {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = { requestedPage = (activePage - 1).coerceAtLeast(0) },
+                        enabled = activePage > 0,
+                        modifier = Modifier.weight(1f).heightIn(min = 52.dp)
+                            .testTag("reader-previous-page")
+                    ) { Text(tr("← Previous page", "← முந்தைய பக்கம்")) }
+                    Button(
+                        onClick = { requestedPage = (activePage + 1).coerceAtMost(totalPages - 1) },
+                        enabled = activePage < totalPages - 1,
+                        modifier = Modifier.weight(1f).heightIn(min = 52.dp)
+                            .testTag("reader-next-page")
+                    ) { Text(tr("Next page →", "அடுத்த பக்கம் →")) }
+                }
+            }
+            if (activePage == totalPages - 1) {
+                item(key = "book-chapter-navigation") {
+                    ChapterNavigation(previous, next, onOpen)
+                }
+            }
+        } else {
+            items(pages.indices.toList(), key = { "chapter-section-" + it }) { index ->
+                val section = pages[index]
+                LessonSection(section.title) {
+                    section.content(this)
+                }
+            }
+            item(key = "continuous-notes") { ChapterNotebook(l, store) }
+            item(key = "continuous-completion") { ChapterCompletion(l, store) }
+            item(key = "continuous-chapter-navigation") {
+                ChapterNavigation(previous, next, onOpen)
             }
         }
     }
-}
-
-private fun englishBody(s: androidx.compose.foundation.lazy.LazyListScope, l: Lesson) = with(s) {
-    if (l.objectives.isNotEmpty()) item { LessonSection("Learning objectives") { Bullets(l.objectives) } }
-    if (l.intro.isNotBlank()) item { LessonSection("Introduction") { Para(l.intro) } }
-    if (l.definition.isNotBlank()) item { LessonSection("Definition") { Para(l.definition) } }
-    if (l.history.isNotBlank()) item { LessonSection("Background") { Para(l.history) } }
-    if (l.need.isNotEmpty()) item { LessonSection("Why it matters") { Bullets(l.need) } }
-    if (l.classification.isNotEmpty()) item { LessonSection("Classification") { l.classification.forEach { Para("${it.name}: ${it.text}") } } }
-    if (l.explanation.isNotEmpty()) item { LessonSection("Explanation") { l.explanation.forEach { Para(it) } } }
-    items(l.formulae) { f ->
-        LessonSection("Formula — ${f.name}") {
-            Mono(f.formula)
-            if (f.meaning.isNotBlank()) Para(f.meaning)
-            f.symbols.forEach { (k, v) -> Para("$k — $v") }
-            if (f.assumptions.isNotEmpty()) { Para("Assumptions:"); Bullets(f.assumptions) }
-            if (f.use.isNotBlank()) Para("Use: ${f.use}")
-            if (f.avoid.isNotBlank()) Para("Avoid when: ${f.avoid}")
-            if (f.bio.isNotBlank()) Para("Biological example: ${f.bio}")
-        }
-    }
-    if (l.examples.isNotEmpty()) item { LessonSection("Worked examples") { l.examples.forEach { ExampleBlock(it) } } }
-    if (l.applications.isNotEmpty()) item { LessonSection("Applications") { l.applications.forEach { (field, notes) -> Para(field); Bullets(notes) } } }
-    if (l.advantages.isNotEmpty()) item { LessonSection("Advantages") { Bullets(l.advantages) } }
-    if (l.limitations.isNotEmpty()) item { LessonSection("Limitations") { Bullets(l.limitations) } }
-    if (l.precautions.isNotEmpty()) item { LessonSection("Precautions") { Bullets(l.precautions) } }
-    if (l.misconceptions.isNotEmpty()) item { LessonSection("Common misconceptions") { Bullets(l.misconceptions) } }
-    if (l.confused.isNotEmpty()) item { LessonSection("Often confused") { Bullets(l.confused) } }
-    if (l.exam.isNotEmpty()) item { LessonSection("Exam guidance") { Bullets(l.exam) } }
-    if (l.mnemonic.isNotBlank()) item { LessonSection("Memory aid") { Para(l.mnemonic) } }
-    if (l.summary.isNotEmpty()) item { LessonSection("Summary") { Bullets(l.summary) } }
-    if (l.selfcheck.isNotEmpty()) item { LessonSection("Self-check") { Bullets(l.selfcheck) } }
-    if (l.references.isNotEmpty()) item { LessonSection("References") { Bullets(l.references) } }
-}
-
-private fun tamilBody(s: androidx.compose.foundation.lazy.LazyListScope, t: TamilLesson, content: CourseContent, l: Lesson) = with(s) {
-    if (t.overview.isNotBlank()) item { LessonSection("மேலோட்டம்") { Para(t.overview) } }
-    if (t.definition.isNotBlank()) item { LessonSection("வரையறை") { Para(t.definition) } }
-    if (t.importance.isNotEmpty()) item { LessonSection("முக்கியத்துவம்") { Bullets(t.importance) } }
-    if (t.explanation.isNotEmpty()) item { LessonSection("விளக்கம்") { t.explanation.forEach { Para(it) } } }
-    items(l.formulae) { f ->
-        val tf = content.extra.formulas["${l.id}|${f.name}"]
-        if (tf != null) LessonSection("சூத்திரம் — ${tf.name}") {
-            Mono(f.formula); Para(tf.meaning); Para("பயன்பாடு: ${tf.use}")
-        }
-    }
-    if (t.bioExamples.isNotEmpty()) item { LessonSection("எடுத்துக்காட்டுகள்") { Bullets(t.bioExamples) } }
-    if (t.points.isNotEmpty()) item { LessonSection("முக்கியக் குறிப்புகள்") { Bullets(t.points) } }
-    if (t.exam.isNotEmpty()) item { LessonSection("தேர்வு வழிகாட்டி") { Bullets(t.exam) } }
-    if (t.mistakes.isNotEmpty()) item { LessonSection("பொதுவான தவறுகள்") { Bullets(t.mistakes) } }
-    if (t.summary.isNotEmpty()) item { LessonSection("சுருக்கம்") { Bullets(t.summary) } }
-    if (t.selfcheck.isNotEmpty()) item { LessonSection("சுயசோதனை") { Bullets(t.selfcheck) } }
 }
 
 @Composable
-private fun ExampleBlock(e: Example) {
-    var show by rememberSaveable(e.q) { mutableStateOf(false) }
-    Para("${e.level}: ${e.q}")
-    if (e.steps.isNotEmpty()) Bullets(e.steps)
-    if (show) Para("Answer: ${e.answer}")
-    OutlinedButton(onClick = { show = !show }) { Text(if (show) "Hide answer" else "Show answer") }
-    Spacer(Modifier.height(8.dp))
+private fun ChapterNotebook(l: Lesson, store: ProgressStore) {
+    var note by remember(l.id) { mutableStateOf(store.notes[l.id].orEmpty()) }
+    SectionCard(tr("My notes • Study journal", "என் குறிப்புகள் • கற்றல் பதிவு")) {
+        OutlinedTextField(
+            value = note,
+            onValueChange = {
+                note = it.take(ProgressStore.MAX_NOTE)
+                store.setNote(l.id, note)
+            },
+            modifier = Modifier.fillMaxWidth().testTag("note"),
+            minLines = 3,
+            label = { Text(tr("Write a note for this chapter", "இப்பாடத்திற்கான குறிப்பை எழுதுக")) }
+        )
+    }
+}
+
+@Composable
+private fun ChapterCompletion(l: Lesson, store: ProgressStore) {
+    val done = l.id in store.completed
+    Button(
+        onClick = { store.toggleLesson(l.id) },
+        modifier = Modifier.fillMaxWidth().heightIn(min = 50.dp).testTag("complete")
+    ) {
+        Text(if (done) tr("Completed — tap to undo", "முடிந்தது — மாற்ற தொடவும்")
+            else tr("Mark lesson as complete", "பாடத்தை முடிந்ததாகக் குறி"))
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun ChapterNavigation(
+    previous: Lesson?, next: Lesson?, onOpen: (String) -> Unit
+) {
+    FlowRow(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        if (previous != null) OutlinedButton(
+            onClick = { onOpen(previous.id) },
+            modifier = Modifier.heightIn(min = 48.dp).testTag("reader-previous-chapter")
+        ) { Text(tr("← Previous chapter", "← முந்தைய பாடம்")) }
+        if (next != null) Button(
+            onClick = { onOpen(next.id) },
+            modifier = Modifier.heightIn(min = 48.dp).testTag("reader-next-chapter")
+        ) { Text(tr("Next chapter →", "அடுத்த பாடம் →")) }
+    }
 }
