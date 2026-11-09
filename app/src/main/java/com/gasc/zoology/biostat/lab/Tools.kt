@@ -312,7 +312,7 @@ val TOOLS: List<ToolDef> = listOf(
         Out(listOf((if (ta) "ஆற்றல் (1 − β)" else "Power (1 − β)") to fmt(r.power, 4), (if (ta) "தரப்படுத்திய விளைவு" else "Standardised effect") to fmt(abs(r.delta) / r.sd), (if (ta) "திட்டப் பிழை" else "SE") to fmt(r.se), "df" to r.df.toString()),
             listOf(if (r.power < 0.8) (if (ta) "ஆற்றல் மரபு இலக்கான 0.80-ஐ விடக் குறைவு; உண்மை விளைவு இருந்தாலும் அதைக் கண்டறியாமல் போக வாய்ப்பு அதிகம். மாதிரி அளவை அதிகரிக்கவும்." else "Power is below the conventional 0.80 target, so a true effect of this size is likely to be missed. Increase the sample size.")
             else (if (ta) "ஆற்றல் மரபு இலக்கான 0.80-ஐ எட்டுகிறது." else "Power meets the conventional 0.80 target."),
-            if (ta) "சோதனைக்கு முன்பே (a priori) ஆற்றலைக் கணக்கிடுக; முடிவுக்குப் பிந்தைய ‘கண்டறியப்பட்ட ஆற்றல்’ கூடுதல் தகவல் தராது." else "Compute power before the study (a priori); post-hoc ‘observed power’ adds no information beyond the p-value."))
+            if (ta) "ஆய்வுக்கு முன்பே ஆற்றலைக் கணக்கிடுங்கள்; முடிவுக்குப் பிந்தைய ‘கண்டறியப்பட்ட ஆற்றல்’ p-மதிப்பிற்கு மேல் கூடுதல் தகவல் தராது." else "Compute power before the study (a priori); post-hoc ‘observed power’ adds no information beyond the p-value."))
     },
 
     ToolDef("qq", "Normal Q–Q plot", "இயல்பு Q–Q வரைபடம்",
