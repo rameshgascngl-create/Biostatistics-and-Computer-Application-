@@ -1,0 +1,116 @@
+package com.gasc.zoology.biostat
+
+import android.content.Context
+import androidx.compose.ui.test.*
+import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.test.core.app.ActivityScenario
+import androidx.test.core.app.ApplicationProvider
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.uiautomator.UiDevice
+import com.gasc.zoology.biostat.lab.TOOLS
+import org.junit.After
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Rule
+import org.junit.Test
+import org.junit.runner.RunWith
+
+/** End-to-end UI checks run on an Android emulator in CI. */
+@RunWith(AndroidJUnit4::class)
+class AppFlowTest {
+    @get:Rule val rule = createEmptyComposeRule()
+    private lateinit var scenario: ActivityScenario<MainActivity>
+    private val device: UiDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+
+    @Before fun setUp() {
+        ApplicationProvider.getApplicationContext<Context>().getSharedPreferences("progress", Context.MODE_PRIVATE).edit().clear().commit()
+        scenario = ActivityScenario.launch(MainActivity::class.java)
+        waitText("Course progress")
+        device.executeShellCommand("mkdir -p /sdcard/Download/qa")
+    }
+
+    @After fun tearDown() { scenario.close() }
+
+    private fun shot(name: String) { device.executeShellCommand("screencap -p /sdcard/Download/qa/$name.png") }
+    private fun waitText(t: String, ms: Long = 20_000) = rule.waitUntil(ms) { rule.onAllNodesWithText(t).fetchSemanticsNodes().isNotEmpty() }
+    private fun waitTag(t: String, ms: Long = 20_000) = rule.waitUntil(ms) { rule.onAllNodesWithTag(t).fetchSemanticsNodes().isNotEmpty() }
+    private fun tab(label: String) { rule.onNode(hasText(label) and hasClickAction()).performClick(); rule.waitForIdle() }
+    private fun tag(t: String) { waitTag(t); rule.onNodeWithTag(t).performScrollTo().performClick(); rule.waitForIdle() }
+    private fun toTamil() { rule.onNodeWithText("தமிழ்").performClick(); waitText("முகப்பு") }
+    private fun toEnglish() { rule.onNodeWithText("English").performClick(); waitText("Home") }
+    private fun back() { device.pressBack(); rule.waitForIdle() }
+
+    @Test fun homeShowsProgressAndSyllabus() {
+        waitText("0 of 44 lessons completed"); rule.onNodeWithText("Syllabus").assertExists(); shot("01_home")
+    }
+
+    @Test fun lessonCompleteBookmarkAndNote() {
+        tab("Lessons"); tag("lesson-U1_T01"); waitText("Learning objectives"); shot("02_lesson")
+        tag("bookmark"); rule.onNodeWithText("★ Bookmarked").assertExists()
+        rule.onNode(hasScrollAction()).performScrollToNode(hasTestTag("note"))
+        rule.onNodeWithTag("note").performTextInput("my note"); rule.onNodeWithTag("note").assertTextContains("my note")
+        rule.onNode(hasScrollAction()).performScrollToNode(hasTestTag("complete"))
+        rule.onNodeWithTag("complete").performClick(); rule.onNodeWithText("Completed — tap to undo").assertExists()
+    }
+
+    @Test fun quizRunsToNextQuestion() {
+        tab("Quiz"); tag("start-quiz"); tag("option-0"); waitTag("next-question"); shot("03_quiz"); tag("next-question")
+        waitText("Question 2 of 10")
+    }
+
+    @Test fun flashcardsFlipAndMarkKnown() {
+        tab("Cards"); waitTag("card"); rule.onNodeWithTag("card").performClick(); rule.onNodeWithText("Definition").assertExists()
+        tag("known"); rule.onNodeWithText("Marked as known — undo").assertExists()
+    }
+
+    @Test fun decisionTreeLeadsToWelch() {
+        tab("Lab"); tag("hub-tree"); tag("choice-1"); tag("choice-1"); tag("choice-0"); waitTag("leaf")
+        rule.onNodeWithText("Welch independent-samples t-test").assertExists(); shot("04_tree")
+    }
+
+    @Test fun dataLabRunsGuidedAnalysis() {
+        tab("Lab"); tag("hub-data"); tag("analyse-7"); waitTag("result"); rule.onNodeWithTag("result").assertExists(); shot("05_datalab")
+    }
+
+    @Test fun visualsRespondToTouch() {
+        tab("Lab"); tag("hub-visuals"); waitText("Central limit theorem")
+        rule.onNodeWithTag("sampling-canvas").performTouchInput { click(center) }
+        rule.onNodeWithTag("sampling-text").assert(!hasText("Select a unit.")); shot("06_visuals")
+    }
+
+    @Test fun progressBackupScreenOffersExportImportReset() {
+        tab("Lab"); tag("hub-progress"); waitTag("export"); rule.onNodeWithTag("import").assertExists(); rule.onNodeWithTag("reset").assertExists()
+    }
+
+    private fun runEveryTool(tamil: Boolean) {
+        tab(if (tamil) "ஆய்வகம்" else "Lab"); tag("hub-tools")
+        for (t in TOOLS) {
+            tag("tool-${t.id}"); tag("run"); waitTag("result")
+            rule.onAllNodesWithTag("error").assertCountEquals(0)
+            if (tamil) rule.onAllNodesWithText("Calculate").assertCountEquals(0)
+            if (t.id == "ttest" || t.id == "corr") shot((if (tamil) "ta_" else "en_") + t.id)
+            back()
+        }
+    }
+
+    @Test fun allSeventeenToolsRunInEnglish() = runEveryTool(false)
+
+    @Test fun allSeventeenToolsRunInTamilWithoutEnglishLabels() { toTamil(); runEveryTool(true) }
+
+    @Test fun badInputShowsLocalisedError() {
+        tab("Lab"); tag("hub-tools"); tag("tool-descriptive")
+        rule.onNodeWithTag("in-data").performTextReplacement("1, ?"); tag("run"); waitTag("error")
+        rule.onNodeWithTag("error").assertTextContains("Non-numeric", substring = true)
+        toTamil(); waitText("எண் அல்லாத உள்ளீடு", 10_000)
+    }
+
+    @Test fun tamilModeShowsNoEnglishLessonHeadings() {
+        toTamil(); tab("பாடங்கள்"); tag("lesson-U1_T01"); waitText("வரையறை")
+        rule.onAllNodesWithText("Definition").assertCountEquals(0); rule.onAllNodesWithText("Learning objectives").assertCountEquals(0)
+        rule.onAllNodesWithText("Introduction").assertCountEquals(0); shot("07_lesson_tamil")
+        back(); tab("வினாடி வினா"); tag("start-quiz"); waitText("வினா 1 / 10")
+        rule.onAllNodesWithText("Question 1 of 10").assertCountEquals(0)
+        toEnglish(); waitText("Question 1 of 10")
+    }
+}
