@@ -58,6 +58,13 @@ class AppFlowTest {
         try { rule.waitUntil(ms) { dismissSystemDialogs(); rule.onAllNodesWithTag(t).fetchSemanticsNodes().isNotEmpty() } } catch (e: Throwable) { fail("tag '$t'", e) }
     private fun tab(label: String) { rule.onNode(hasText(label) and hasClickAction()).performClick(); rule.waitForIdle() }
     private fun tag(t: String) { waitTag(t); val n = rule.onNodeWithTag(t); runCatching { n.performScrollTo() }; n.performClick(); rule.waitForIdle() }
+    private fun turnBookPage(next: Boolean) {
+        val action = if (next) "reader-next-page" else "reader-previous-page"
+        rule.onAllNodes(hasScrollToNodeAction())[0]
+            .performScrollToNode(hasTestTag(action))
+        rule.onNodeWithTag(action).performClick()
+        rule.waitForIdle()
+    }
     private fun toTamil() { rule.onNodeWithText("தமிழ்").performClick(); waitText("முகப்பு") }
     private fun toEnglish() { rule.onNodeWithText("English").performClick(); waitText("Home") }
     private fun back() { dismissSystemDialogs(); device.pressBack(); rule.waitForIdle() }
@@ -253,10 +260,10 @@ class AppFlowTest {
         waitTag("reader-page-number")
         waitTag("section-body-Learning objectives")
         shot("12_book_page_one")
-        tag("reader-next-page")
+        turnBookPage(true)
         waitTag("section-body-Introduction")
         shot("13_book_page_two")
-        tag("reader-previous-page")
+        turnBookPage(false)
         waitTag("section-body-Learning objectives")
         rule.onNodeWithTag("reader-contents").assertExists()
         tag("reader-mode-continuous")
@@ -272,7 +279,7 @@ class AppFlowTest {
         tag("lesson-U1_T01")
         waitTag("reader-page-number")
         waitTag("section-body-மேலோட்டம்")
-        tag("reader-next-page")
+        turnBookPage(true)
         waitTag("section-body-வரையறை")
         rule.onAllNodesWithText("Introduction").assertCountEquals(0)
         shot("14_book_page_tamil")
