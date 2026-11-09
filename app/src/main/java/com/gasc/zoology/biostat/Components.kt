@@ -55,7 +55,7 @@ fun Bullets(items: List<String>) {
         Row(Modifier.fillMaxWidth().padding(vertical = 5.dp)) {
             Text("•", modifier = Modifier.width(20.dp), color = MaterialTheme.colorScheme.secondary)
             Text(it, modifier = Modifier.weight(1f),
-                style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 1.45.em),
+                style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 1.48.em),
                 color = MaterialTheme.colorScheme.onSurface, textAlign = TextAlign.Justify)
         }
     }
@@ -66,7 +66,7 @@ fun Bullets(items: List<String>) {
 fun Para(text: String) {
     Text(text,
         modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp),
-        style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 1.5.em),
+        style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 1.52.em),
         textAlign = TextAlign.Justify,
         color = MaterialTheme.colorScheme.onSurface)
 }
