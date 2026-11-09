@@ -52,11 +52,12 @@ internal fun readingTone(title: String): ReadingTone {
 fun LessonSection(
     title: String,
     modifier: Modifier = Modifier,
+    initiallyOpenOverride: Boolean = false,
     body: @Composable ColumnScope.() -> Unit
 ) {
     val tone = readingTone(title)
-    val initiallyOpen = title == "Learning objectives" || title == "மேலோட்டம்"
-    var expanded by rememberSaveable(title) { mutableStateOf(initiallyOpen) }
+    val initiallyOpen = initiallyOpenOverride || title == "Learning objectives" || title == "மேலோட்டம்"
+    var expanded by rememberSaveable(title, initiallyOpenOverride) { mutableStateOf(initiallyOpen) }
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(19.dp),
