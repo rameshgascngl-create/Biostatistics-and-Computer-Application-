@@ -93,6 +93,19 @@ class AppFlowTest {
         rule.onNodeWithText("Welch independent-samples t-test").assertExists(); shot("04_tree")
     }
 
+    @Test fun unequalVarianceDecisionSelectsNativeWelchAnova() {
+        tab("Lab"); tag("hub-tree")
+        tag("choice-1") // Compare independent groups
+        tag("choice-3") // Three or more independent groups
+        tag("choice-1") // Approximately normal, unequal variances
+        waitText("Welch one-way ANOVA")
+        rule.onNodeWithText("Open: Welch one-way ANOVA").performClick()
+        waitTag("run")
+        tag("run")
+        waitTag("result")
+        shot("11_welch_anova")
+    }
+
     @Test fun dataLabRunsGuidedAnalysis() {
         tab("Lab"); tag("hub-data"); tag("analyse-7"); waitTag("result"); rule.onNodeWithTag("result").assertExists(); shot("05_datalab")
     }
