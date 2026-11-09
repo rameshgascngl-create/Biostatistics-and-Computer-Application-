@@ -12,7 +12,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun HomeScreen(content: CourseContent, store: ProgressStore, onOpenLesson: (String) -> Unit, onOpenLessons: () -> Unit) {
+fun HomeScreen(content: CourseContent, store: ProgressStore, onOpenLesson: (String) -> Unit, onOpenLessons: () -> Unit, onOpenPrivacy: () -> Unit = {}) {
     val ta = store.tamil
     val total = content.lessons.size
     val done = store.completed.count { id -> content.lessons.any { it.id == id } }
@@ -47,5 +47,6 @@ fun HomeScreen(content: CourseContent, store: ProgressStore, onOpenLesson: (Stri
                 } else Para(tr("${topics.size} topics · tap to expand", "${topics.size} தலைப்புகள் · விரிக்க தொடவும்"))
             }
         }
+        item { TextButton(onClick = onOpenPrivacy, modifier = Modifier.testTag("home-privacy")) { Text(tr("Privacy policy", "தனியுரிமைக் கொள்கை")) } }
     }
 }

@@ -168,6 +168,13 @@ class AppFlowTest {
         }
     }
 
+    @Test fun privacyPolicyIsInAppInBothLanguages() {
+        tab("Lab"); tag("hub-privacy"); waitText("Privacy Policy"); waitText("Information we collect")
+        rule.onAllNodesWithText("தனியுரிமைக் கொள்கை").assertCountEquals(0)
+        back(); toTamil(); tab("ஆய்வகம்"); tag("hub-privacy"); waitText("தனியுரிமைக் கொள்கை")
+        rule.onAllNodesWithText("Information we collect").assertCountEquals(0)
+    }
+
     @Test fun all44LessonsOpenInEnglish() = openEveryLesson(false)
 
     @Test fun all44LessonsOpenInTamil() { toTamil(); openEveryLesson(true) }

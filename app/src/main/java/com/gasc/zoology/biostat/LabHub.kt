@@ -24,7 +24,8 @@ private val entries = listOf(
     Entry("lab/data", "Data lab", "தரவு ஆய்வகம்", "Thirteen biological datasets with guided analysis.", "வழிகாட்டப்பட்ட பகுப்பாய்வுடன் பதின்மூன்று உயிரியல் தரவுத்தொகுப்புகள்."),
     Entry("lab/formulas", "Formula explorer", "சூத்திரத் தேடல்", "All 43 formulae with meanings, searchable.", "பொருளுடன் அனைத்து 43 சூத்திரங்கள் — தேடலாம்."),
     Entry("lab/toolkit", "Student toolkit", "மாணவர் கருவித்தொகுப்பு", "Mnemonics, extra problems and a formula cheat-sheet.", "நினைவுத் துணுக்குகள், கூடுதல் கணக்குகள், சூத்திரக் குறிப்புத்தாள்."),
-    Entry("lab/progress", "Progress backup", "முன்னேற்றக் காப்பு", "Export or import your progress as a JSON file.", "உங்கள் முன்னேற்றத்தை JSON கோப்பாக ஏற்றுமதி/இறக்குமதி செய்யவும்.")
+    Entry("lab/progress", "Progress backup", "முன்னேற்றக் காப்பு", "Export or import your progress as a JSON file.", "உங்கள் முன்னேற்றத்தை JSON கோப்பாக ஏற்றுமதி/இறக்குமதி செய்யவும்."),
+    Entry("lab/privacy", "Privacy policy", "தனியுரிமைக் கொள்கை", "What the app stores on your device and what it never collects.", "செயலி உங்கள் சாதனத்தில் எதைச் சேமிக்கிறது, எதைச் சேகரிப்பதே இல்லை என்பது.")
 )
 
 @Composable
