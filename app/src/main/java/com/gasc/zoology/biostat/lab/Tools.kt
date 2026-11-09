@@ -202,7 +202,7 @@ val TOOLS: List<ToolDef> = listOf(
         val r = tukeyHsd(g, a)
         val met = listOf("MSW" to fmt(r.msw), (if (ta) "குழுவிற்குள் df" else "df within") to r.dfw.toString(), (if (ta) "q மாறுநிலை" else "q critical") to fmt(r.qcrit), "α" to fmt(r.alpha))
         val tb = Table(listOf(if (ta) "ஒப்பீடு" else "Pair", if (ta) "சராசரி வேறுபாடு" else "Mean diff", "q", "p", "HSD", if (ta) "முடிவு" else "Result"),
-            r.pairs.map { listOf("${it.i + 1} vs ${it.j + 1}", fmt(it.diff), fmt(it.q), pFmt(it.p), fmt(it.hsd), if (it.significant) (if (ta) "முக்கியத்துவம் உண்டு" else "significant") else (if (ta) "இல்லை" else "ns")) })
+            r.pairs.map { listOf("${it.i + 1} ↔ ${it.j + 1}", fmt(it.diff), fmt(it.q), pFmt(it.p), fmt(it.hsd), if (it.significant) (if (ta) "முக்கியத்துவம் உண்டு" else "significant") else (if (ta) "இல்லை" else "ns")) })
         Out(met, listOf(if (ta) "p மதிப்புகள் குடும்பம்-வாரியான பிழை விகிதத்தைக் கட்டுப்படுத்துகின்றன. அனுமானங்கள் ANOVA-வைப் போன்றவை; குழு அளவுகள் சமமற்றிருந்தால் Tukey–Kramer சரிசெய்தல் பயன்படுத்தப்படுகிறது." else "The p-values control the family-wise error rate. Assumptions are those of ANOVA; unequal group sizes are handled by the Tukey–Kramer adjustment."),
             listOf((if (ta) "இணை ஒப்பீடுகள்" else "Pairwise comparisons") to tb))
     },

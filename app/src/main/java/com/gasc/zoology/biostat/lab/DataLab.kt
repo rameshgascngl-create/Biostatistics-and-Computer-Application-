@@ -37,7 +37,7 @@ val DATASETS: List<DataSet> = listOf(
         "A: 42, B: 18, AB: 8, O: 52") { ta ->
         val labels = listOf("A", "B", "AB", "O"); val v = listOf(42.0, 18.0, 8.0, 52.0); val n = v.sum()
         Out(listOf("N" to fmt(n), (if (ta) "மிகப் பொதுவான வகை" else "Most frequent group") to "O"),
-            listOf(if (ta) "இது பெயரளவு (nominal) வகைத் தரவு; சராசரி பொருளற்றது — நிகழ்வெண், சதவீதம், முகடு ஆகியவற்றைப் பயன்படுத்தவும்." else "This is nominal categorical data: a mean is meaningless — use frequencies, percentages and the mode."),
+            listOf(if (ta) "இது பெயரளவு வகைத் தரவு; சராசரி பொருளற்றது — நிகழ்வெண், சதவீதம், முகடு ஆகியவற்றைப் பயன்படுத்தவும்." else "This is nominal categorical data: a mean is meaningless — use frequencies, percentages and the mode."),
             listOf((if (ta) "சதவீத அட்டவணை" else "Percentage table") to Table(listOf(if (ta) "வகை" else "Group", if (ta) "எண்ணிக்கை" else "Count", "%"),
                 labels.indices.map { listOf(labels[it], fmt(v[it]), fmt(100 * v[it] / n, 4)) })))
     },

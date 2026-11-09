@@ -10,7 +10,7 @@ class LabToolsTest {
     /** Latin words that may legitimately appear inside Tamil text: statistical symbols, test and author names. */
     private val allowed = setOf("df", "SE", "SD", "CV", "ANOVA", "HSD", "MSW", "NNT", "NNH", "IQR", "RR", "OR", "Cohen", "Tukey", "Kramer",
         "Dunn", "Fisher", "Hardy", "Weinberg", "Pearson", "Spearman", "Mann", "Whitney", "Wilcoxon", "Welch", "Kruskal", "Wallis",
-        "AA", "Aa", "aa", "pp", "Col", "Row", "Q", "Z", "Y", "X", "MS", "SS", "dz", "Student", "JSON", "TA", "EN", "Strain", "Before", "After")
+        "AA", "Aa", "aa", "pp", "Col", "Row", "Q", "Z", "Y", "X", "MS", "SS", "dz", "Student", "JSON", "TA", "EN", "Strain", "Before", "After", "A", "B", "O", "AB")
 
     private fun latinWords(s: String) = Regex("[A-Za-z]{2,}").findAll(s).map { it.value }.filter { it !in allowed }.toList()
 
@@ -45,7 +45,7 @@ class LabToolsTest {
     }
 
     @Test fun badInputGivesLocalisedErrors() {
-        val cases = listOf("descriptive" to mapOf("data" to "1, two"), "ttest" to mapOf("type" to "one", "mu" to "x", "a" to "1,2,3"),
+        val cases = listOf("descriptive" to mapOf("data" to "1, ?"), "ttest" to mapOf("type" to "one", "mu" to "x", "a" to "1,2,3"),
             "chiind" to mapOf("m" to "1 2\n3"), "anova" to mapOf("g" to "1,2,3"), "epi" to mapOf("a" to "1.5", "b" to "2", "c" to "3", "d" to "4"),
             "z" to mapOf("x" to "1", "mean" to "0", "sd" to "0"), "power" to mapOf("n" to "1", "delta" to "1", "sd" to "1", "alpha" to "0.05"))
         for ((id, m) in cases) {
