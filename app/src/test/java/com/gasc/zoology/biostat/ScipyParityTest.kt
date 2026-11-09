@@ -65,8 +65,11 @@ class ScipyParityTest {
     private fun checkT(key: String, type: TType, a: List<Double>, b: List<Double>, mu: Double = 0.0) {
         val r = o(key); val t = tTest(type, a, b, mu)
         near("$key t", r.d("t"), t.t, 1e-9); near("$key df", r.d("df"), t.df, 1e-9)
-        near("$key p", r.d("p"), t.p, 1e-8); near("$key ciLow", r.d("ciLow"), t.ciLow, 1e-8)
-        near("$key ciHigh", r.d("ciHigh"), t.ciHigh, 1e-8)
+        near("$key p", r.d("p"), t.p, 1e-8)
+        // SciPy reports the one-sample CI for the population mean; the app reports the CI for the
+        // difference (mean - mu0), as the legacy lab did, so shift the reference by mu0.
+        near("$key ciLow", r.d("ciLow") - mu, t.ciLow, 1e-8, 1e-9)
+        near("$key ciHigh", r.d("ciHigh") - mu, t.ciHigh, 1e-8, 1e-9)
     }
 
     @Test fun tTests() {
