@@ -294,13 +294,24 @@ class AppFlowTest {
         throw last!!
     }
 
+    private fun selectTextbookUnit(unit: Int) {
+        rule.onAllNodes(hasScrollToNodeAction())[0]
+            .performScrollToNode(hasTestTag("textbook-filter-scroll"))
+        rule.onNodeWithTag("textbook-filter-scroll")
+            .performScrollToNode(hasTestTag("textbook-filter-$unit"))
+        rule.onNodeWithTag("textbook-filter-$unit").performClick()
+        rule.waitForIdle()
+    }
+
     private fun openEveryLesson(tamil: Boolean) {
         val c = courseContent()
         tab(if (tamil) "பாடங்கள்" else "Lessons")
         for (l in c.lessons) {
           step {
-            rule.waitUntil(20000) { rule.onAllNodes(hasScrollToNodeAction()).fetchSemanticsNodes().isNotEmpty() }
-            rule.onAllNodes(hasScrollToNodeAction())[0].performScrollToNode(hasTestTag("lesson-${l.id}"))
+            // Filtering to each unit makes a 44-chapter accessibility traversal deterministic.
+            selectTextbookUnit(l.unit)
+            rule.onAllNodes(hasScrollToNodeAction())[0]
+                .performScrollToNode(hasTestTag("lesson-${l.id}"))
             tag("lesson-${l.id}")
             waitTag("bookmark")
             tag("reader-mode-continuous")
