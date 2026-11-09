@@ -18,7 +18,7 @@ import androidx.compose.ui.unit.dp
 private data class Entry(val route: String, val en: String, val ta: String, val descEn: String, val descTa: String)
 
 private val entries = listOf(
-    Entry("lab/tools", "Analysis Lab", "பகுப்பாய்வு ஆய்வகம்", "17 calculators: t-tests, chi-square, ANOVA, non-parametric tests, power and more.", "17 கணிப்பான்கள்: t-சோதனை, கை-வர்க்கம், ANOVA, அளபுரு-அற்ற சோதனைகள், ஆற்றல் உள்ளிட்டவை."),
+    Entry("lab/tools", "Analysis Lab", "பகுப்பாய்வு ஆய்வகம்", "18 calculators: t-tests, chi-square, ANOVA, non-parametric tests, power and more.", "18 கணிப்பான்கள்: t-சோதனை, கை-வர்க்கம், ANOVA, அளபுரு-அற்ற சோதனைகள், ஆற்றல் உள்ளிட்டவை."),
     Entry("lab/tree", "Test decision tree", "சோதனைத் தேர்வு முடிவு மரம்", "Answer a few questions to choose the right statistical test.", "சில கேள்விகளுக்குப் பதிலளித்துச் சரியான புள்ளியியல் சோதனையைத் தேர்ந்தெடுக்கவும்."),
     Entry("lab/visuals", "Interactive visuals", "ஊடாடும் காட்சிகள்", "Sampling distribution, normal curve, regression and Q–Q demonstrations.", "மாதிரிப் பரவல், இயல்பு வளைவு, பின்னடைவு, Q–Q செயல்விளக்கங்கள்."),
     Entry("lab/data", "Data lab", "தரவு ஆய்வகம்", "Thirteen biological datasets with guided analysis.", "வழிகாட்டப்பட்ட பகுப்பாய்வுடன் பதின்மூன்று உயிரியல் தரவுத்தொகுப்புகள்."),
