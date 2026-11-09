@@ -1,5 +1,17 @@
 package com.gasc.zoology.biostat
 
+import androidx.compose.ui.text.font.FontWeight
+
+import androidx.compose.ui.graphics.Color
+
+import androidx.compose.ui.graphics.Brush
+
+import androidx.compose.foundation.shape.RoundedCornerShape
+
+import androidx.compose.foundation.background
+
+import androidx.compose.foundation.BorderStroke
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -58,12 +70,47 @@ fun LessonScreen(content: CourseContent, l: Lesson, store: ProgressStore, onOpen
     val next = content.lessons.getOrNull(idx + 1)
     LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item {
-            Text(if (ta) t?.title.orEmpty() else l.title, style = MaterialTheme.typography.headlineSmall)
-            Para(if (ta) "அலகு ${l.unit} · ${l.study.read} நிமிட வாசிப்பு · ${l.study.practice} நிமிடப் பயிற்சி"
-                 else "Unit ${l.unit} · ${l.difficulty} · ${l.study.read} min read · ${l.study.practice} min practice")
-            val marked = l.id in store.bookmarks
-            OutlinedButton(onClick = { store.toggleBookmark(l.id) }, modifier = Modifier.testTag("bookmark")) {
-                Text(if (marked) tr("★ Bookmarked", "★ புத்தகக்குறியிடப்பட்டது") else tr("☆ Bookmark", "☆ புத்தகக்குறியிடு"))
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(21.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF244D92))
+            ) {
+                Column(
+                    Modifier.fillMaxWidth()
+                        .background(Brush.linearGradient(listOf(Color(0xFF15345F), Color(0xFF245CA7), Color(0xFF087C80))))
+                        .padding(20.dp)
+                ) {
+                    Text(
+                        tr("UNIT ${l.unit}  •  CHAPTER ${idx + 1} OF ${content.lessons.size}",
+                           "அலகு ${l.unit}  •  பாடம் ${idx + 1} / ${content.lessons.size}"),
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold, color = Color(0xFFCAF5EE)
+                    )
+                    Spacer(Modifier.height(10.dp))
+                    Text(
+                        if (ta) t?.title.orEmpty().ifBlank { l.title } else l.title,
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold, color = Color.White
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        if (ta) "${l.study.read} நிமிட வாசிப்பு · ${l.study.practice} நிமிடப் பயிற்சி"
+                        else "${l.study.read} min read · ${l.study.practice} min practice",
+                        style = MaterialTheme.typography.bodyMedium, color = Color(0xFFE2EEFA)
+                    )
+                    Spacer(Modifier.height(14.dp))
+                    val marked = l.id in store.bookmarks
+                    OutlinedButton(
+                        onClick = { store.toggleBookmark(l.id) },
+                        modifier = Modifier.heightIn(min = 48.dp).testTag("bookmark"),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                        border = BorderStroke(1.dp, Color.White.copy(alpha = .7f))
+                    ) {
+                        Text(if (marked) tr("★ Bookmarked", "★ புத்தகக்குறியிடப்பட்டது")
+                             else tr("☆ Bookmark this lesson", "☆ பாடத்தைக் குறியிடு"),
+                            fontWeight = FontWeight.Bold)
+                    }
+                }
             }
         }
         if (ta) { if (t != null) tamilBody(this, t, content, l) } else englishBody(this, l)
