@@ -123,4 +123,39 @@ class AppFlowTest {
         rule.onAllNodesWithText("Question 1 of 10").assertCountEquals(0)
         toEnglish(); waitText("Question 1 of 10")
     }
+
+    private fun courseContent() = kotlinx.coroutines.runBlocking { ContentRepository.load(InstrumentationRegistry.getInstrumentation().targetContext) }
+
+    private fun openEveryLesson(tamil: Boolean) {
+        val c = courseContent()
+        tab(if (tamil) "பாடங்கள்" else "Lessons")
+        for (l in c.lessons) {
+            tag("lesson-${l.id}")
+            waitTag("bookmark")
+            rule.onNode(hasScrollAction()).performScrollToNode(hasTestTag("complete"))
+            rule.onNodeWithTag("complete").assertExists()
+            val title = if (tamil) c.tamilLessons.getValue(l.id).title else l.title
+            rule.onAllNodesWithText(title).assertCountEquals(1)
+            back()
+        }
+    }
+
+    @Test fun all44LessonsOpenInEnglish() = openEveryLesson(false)
+
+    @Test fun all44LessonsOpenInTamil() { toTamil(); openEveryLesson(true) }
+
+    private fun flipEveryCard(tamil: Boolean) {
+        val c = courseContent()
+        tab(if (tamil) "அட்டைகள்" else "Cards")
+        for (i in c.flashcards.indices) {
+            waitTag("card")
+            rule.onNodeWithTag("card").performClick()
+            rule.onNodeWithText(if (tamil) "வரையறை" else "Definition").assertExists()
+            if (i < c.flashcards.size - 1) rule.onNodeWithText(if (tamil) "அடுத்தது →" else "Next →").performClick()
+        }
+    }
+
+    @Test fun all50FlashcardsFlipInEnglish() = flipEveryCard(false)
+
+    @Test fun all50FlashcardsFlipInTamil() { toTamil(); flipEveryCard(true) }
 }
