@@ -62,7 +62,10 @@ class AppFlowTest {
     private fun back() { dismissSystemDialogs(); device.pressBack(); rule.waitForIdle() }
 
     @Test fun homeShowsProgressAndSyllabus() {
-        waitText("0 of 44 lessons completed"); rule.onNodeWithText("Syllabus").assertExists(); shot("01_home")
+        waitText("0 of 44 lessons completed")
+        rule.onNodeWithTag("home-scroll").performScrollToNode(hasText("Syllabus"))
+        rule.onNodeWithText("Syllabus").assertExists()
+        shot("01_home")
     }
 
     @Test fun lessonCompleteBookmarkAndNote() {
