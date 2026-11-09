@@ -37,7 +37,8 @@ private fun sigWord(p: Double, ta: Boolean, alpha: Double = 0.05) =
     else (if (ta) "புள்ளியியல் ரீதியாக முக்கியத்துவம் அற்றது" else "not statistically significant")
 
 private fun decision(p: Double, ta: Boolean) =
-    if (ta) "α = 0.05 மட்டத்தில் முடிவு ${sigWord(p, true)} (p = ${pFmt(p)}); பூஜ்யக் கருதுகோளை ${if (p < 0.05) "நிராகரிக்கலாம்" else "நிராகரிக்க இயலாது"}. இது மாதிரிச் சோதனை அனுமானங்களின் கீழான புள்ளியியல் கூற்று மட்டுமே; உயிரியல் முக்கியத்துவத்தைக் குறிக்காது."
+    if (!p.isFinite()) (if (ta) "இச்சோதனையின் p மதிப்பை வரையறுக்க இயலவில்லை; முக்கியத்துவம் குறித்த முடிவு எடுக்க வேண்டாம்." else "The p-value is undefined for these data; no significance decision can be made.")
+    else if (ta) "α = 0.05 மட்டத்தில் முடிவு ${sigWord(p, true)} (p = ${pFmt(p)}); பூஜ்யக் கருதுகோளை ${if (p < 0.05) "நிராகரிக்கலாம்" else "நிராகரிக்க இயலாது"}. இது மாதிரிச் சோதனை அனுமானங்களின் கீழான புள்ளியியல் கூற்று மட்டுமே; உயிரியல் முக்கியத்துவத்தைக் குறிக்காது."
     else "At α = 0.05 the result is ${sigWord(p, false)} (p = ${pFmt(p)}); the null hypothesis ${if (p < 0.05) "is rejected" else "cannot be rejected"}. This is an inferential statement under the test assumptions, not a statement of biological importance."
 
 private fun histogram(x: List<Double>): Plot.Hist {
@@ -187,9 +188,38 @@ val TOOLS: List<ToolDef> = listOf(
         val gt = Table(listOf(if (ta) "குழு" else "Group", "n", if (ta) "சராசரி" else "Mean", "SD"), r.means.indices.map { listOf((it + 1).toString(), r.ns[it].toString(), fmt(r.means[it]), fmt(r.sds[it])) })
         val notes = mutableListOf(decision(r.p, ta))
         val sdv = r.sds.filter { it > 0 }
-        if (sdv.size > 1 && sdv.max() / sdv.min() > 2) notes += if (ta) "எச்சரிக்கை: குழுத் திட்ட விலக்கங்களின் விகிதம் 2-ஐ மீறுகிறது; மாறுபாடு சமத்துவ அனுமானம் ஐயத்திற்குரியது (கிரஸ்கல்–வாலிஸ் சோதனையைப் பரிசீலிக்கவும்)." else "Warning: the ratio of largest to smallest group SD exceeds 2, so equal variances are doubtful (consider Kruskal–Wallis)."
+        if (sdv.size > 1 && sdv.max() / sdv.min() > 2) notes += if (ta) "எச்சரிக்கை: குழுத் திட்ட விலக்கங்களின் விகிதம் 2-ஐ மீறுகிறது; மாறுபாடு சமத்துவ அனுமானம் ஐயத்திற்குரியது. தோராயமாக இயல்பான சார்பற்ற குழுக்களின் சராசரிகளை ஒப்பிட வெல்ச் ஒரு வழி ANOVA சோதனையைப் பரிசீலிக்கவும்; சமமற்ற மாறுபாடு மட்டும் கிரஸ்கல்–வாலிஸ் சோதனைக்கான காரணமல்ல." else "Warning: the ratio of largest to smallest group SD exceeds 2; equal variances are doubtful. For independent approximately normal groups, consider Welch one-way ANOVA when comparing means. Unequal spread alone does not justify Kruskal–Wallis."
         notes += if (ta) "அனுமானங்கள்: சார்பற்ற கண்டறிதல்கள், குழுக்களுக்குள் தோராயமாக இயல்பு பரவல், சம மாறுபாடு. குறிப்பிடத்தக்க F குறைந்தது ஒரு குழுச் சராசரி வேறுபடுவதைக் காட்டுகிறது; எந்தக் குழுக்கள் என்பதற்கு Tukey HSD பயன்படுத்தவும்." else "Assumptions: independent observations, approximately normal within groups, equal variances. A significant F says at least one mean differs; use Tukey HSD to see which."
         Out(met, notes, listOf((if (ta) "ANOVA அட்டவணை" else "ANOVA table") to tb, (if (ta) "குழுச் சுருக்கம்" else "Group summary") to gt))
+    },
+
+    ToolDef("welchanova", "Welch one-way ANOVA", "வெல்ச் ஒரு வழி ANOVA",
+        "Compare means of three or more independent groups when variances differ, with Welch-adjusted F and degrees of freedom.",
+        "மாறுபாடுகள் சமமற்ற மூன்று அல்லது அதற்கு மேற்பட்ட சார்பற்ற குழுக்களின் சராசரிகளை வெல்ச் முறையில் ஒப்பிடுதல்.",
+        listOf(Input("g", "Groups (separate groups with ;)", "குழுக்கள் (குழுக்களை ; கொண்டு பிரிக்கவும்)",
+            "12, 15, 14, 11, 13; 14, 17, 15, 13, 16, 15; 16, 19, 15, 17, 18"))
+    ) { m, ta ->
+        val groups = Parse.groups(m["g"].orEmpty(), 3, 2)
+        val r = welchAnova(groups)
+        val metrics = listOf("F" to fmt(r.f),
+            (if (ta) "தொகுதி சுதந்திர அளவு" else "Numerator df") to r.df1.toString(),
+            (if (ta) "திருத்திய சுதந்திர அளவு" else "Welch denominator df") to fmt(r.df2, 6),
+            "p" to pFmt(r.p))
+        val table = Table(listOf(if (ta) "குழு" else "Group", "n",
+                if (ta) "சராசரி" else "Mean", if (ta) "மாறுபாடு" else "Variance"),
+            r.means.indices.map { i ->
+                listOf((i + 1).toString(), r.ns[i].toString(), fmt(r.means[i]), fmt(r.variances[i]))
+            })
+        val notes = listOf(decision(r.p, ta),
+            if (ta)
+                "அனுமானங்கள்: சார்பற்ற கண்டறிதல்கள்; ஒவ்வொரு குழுவிலும் தோராயமாக இயல்பான தரவு. குழு மாறுபாடுகள் சமமாக இருக்க வேண்டியதில்லை. குழுச் சராசரி வேறுபாட்டைச் சோதிக்கிறது; நடுக்கோடிகளை அல்ல."
+            else
+                "Assumptions: independent observations and approximately normal data within each group. Equal variances are not required. This tests group means, not medians.",
+            if (ta)
+                "குறிப்பிடத்தக்க முடிவுக்குப் பின் இருகுழு ஒப்பீட்டிற்கு கேம்ஸ்–ஹோவெல் முறை பொருத்தமானது; இச்செயலியில் அது இன்னும் வழங்கப்படவில்லை. சாதாரண டூக்கி சோதனையைத் தானாகப் பயன்படுத்த வேண்டாம்."
+            else
+                "For post-hoc pairwise comparisons use a validated Games–Howell implementation (not yet included here). Do not automatically apply ordinary Tukey HSD after Welch ANOVA.")
+        Out(metrics, notes, listOf((if (ta) "குழுச் சுருக்கம்" else "Group summary") to table))
     },
 
     ToolDef("tukey", "Tukey HSD post-hoc test", "டூக்கி HSD பிந்தைய சோதனை",

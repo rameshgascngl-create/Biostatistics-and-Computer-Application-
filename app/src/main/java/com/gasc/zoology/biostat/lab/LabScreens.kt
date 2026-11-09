@@ -1,6 +1,7 @@
 package com.gasc.zoology.biostat.lab
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -119,9 +121,22 @@ fun ResultView(o: Out) {
     o.plot?.let { SectionCard(tr("Plot", "வரைபடம்")) { PlotView(it) } }
     o.tables.forEach { (title, t) ->
         SectionCard(title) {
-            Row(Modifier.fillMaxWidth()) { t.header.forEach { Text(it, Modifier.weight(1f), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold) } }
-            Spacer(Modifier.height(4.dp))
-            t.rows.forEach { row -> Row(Modifier.fillMaxWidth().padding(vertical = 2.dp)) { row.forEach { Text(it, Modifier.weight(1f), style = MaterialTheme.typography.bodySmall) } } }
+            Column(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())) {
+                val tableWidth = maxOf(320, t.header.size * 136).dp
+                Column(Modifier.width(tableWidth)) {
+                    Row(Modifier.fillMaxWidth()) {
+                        t.header.forEach { Text(it, Modifier.weight(1f).padding(end = 6.dp),
+                            style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold) }
+                    }
+                    Spacer(Modifier.height(6.dp))
+                    t.rows.forEach { row ->
+                        Row(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                            row.forEach { Text(it, Modifier.weight(1f).padding(end = 6.dp),
+                                style = MaterialTheme.typography.bodySmall) }
+                        }
+                    }
+                }
+            }
         }
     }
     if (o.notes.isNotEmpty()) SectionCard(tr("Interpretation and assumptions", "விளக்கமும் அனுமானங்களும்")) { Bullets(o.notes) }

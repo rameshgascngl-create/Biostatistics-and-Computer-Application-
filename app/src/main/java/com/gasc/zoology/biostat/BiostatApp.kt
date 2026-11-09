@@ -1,6 +1,7 @@
 package com.gasc.zoology.biostat
 
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Home
@@ -8,11 +9,13 @@ import androidx.compose.material.icons.filled.Quiz
 import androidx.compose.material.icons.filled.Science
 import androidx.compose.material.icons.filled.Style
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -23,6 +26,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -49,14 +54,20 @@ fun BiostatApp(content: CourseContent, store: ProgressStore) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (ta) "உயிரிப் புள்ளியியல்" else "Biostatistics Mastery") },
+                title = {
+                    Text(if (ta) "உயிரிப் புள்ளியியல்" else "Biostatistics Mastery",
+                        style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                },
                 actions = {
-                    FilterChip(
-                        selected = store.tamil,
+                    Button(
                         onClick = { store.toggleTamil() },
-                        label = { Text(if (ta) "English" else "தமிழ்") },
-                        modifier = Modifier.padding(end = 8.dp)
-                    )
+                        modifier = Modifier.padding(end = 8.dp).heightIn(min = 44.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.White, contentColor = Color(0xFF143A73)
+                        )
+                    ) {
+                        Text(if (ta) "English" else "தமிழ்", fontWeight = FontWeight.Bold)
+                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
@@ -65,7 +76,10 @@ fun BiostatApp(content: CourseContent, store: ProgressStore) {
             )
         },
         bottomBar = {
-            NavigationBar {
+            NavigationBar(
+                containerColor = Color.White,
+                tonalElevation = 0.dp
+            ) {
                 tabs.forEach { t ->
                     val selected = route == t.route || (t.route == "lessons" && route.startsWith("lesson/")) ||
                         (t.route == "lab" && route.startsWith("lab/"))
@@ -79,7 +93,14 @@ fun BiostatApp(content: CourseContent, store: ProgressStore) {
                             }
                         },
                         icon = { Icon(t.icon, contentDescription = t.label) },
-                        label = { Text(t.label) }
+                        label = { Text(t.label, style = MaterialTheme.typography.labelMedium) },
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = MaterialTheme.colorScheme.primary,
+                            selectedTextColor = MaterialTheme.colorScheme.primary,
+                            indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+                            unselectedIconColor = Color(0xFF6E7B94),
+                            unselectedTextColor = Color(0xFF5B6880)
+                        )
                     )
                 }
             }
@@ -88,10 +109,13 @@ fun BiostatApp(content: CourseContent, store: ProgressStore) {
         NavHost(nav, startDestination = "home", modifier = Modifier.padding(pad)) {
             composable("home") {
                 HomeScreen(content, store, onOpenLesson = { nav.navigate("lesson/$it") },
-                    onOpenLessons = { nav.navigate("lessons") }, onOpenPrivacy = { nav.navigate("lab/privacy") })
+                    onOpenLessons = { nav.navigate("lessons") },
+                    onOpenQuiz = { nav.navigate("quiz") },
+                    onOpenLab = { nav.navigate("lab/tools") },
+                    onOpenPrivacy = { nav.navigate("lab/privacy") })
             }
             composable("lessons") {
-                LessonListScreen(content, store, onOpen = { nav.navigate("lesson/$it") })
+                RichLessonListScreen(content, store, onOpen = { nav.navigate("lesson/$it") })
             }
             composable("lesson/{id}") { b ->
                 val id = b.arguments?.getString("id").orEmpty()

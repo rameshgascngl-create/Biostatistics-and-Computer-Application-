@@ -17,7 +17,7 @@ class LabToolsTest {
     private fun allText(o: Out): List<String> = o.metrics.flatMap { listOf(it.first, it.second) } + o.notes +
         o.tables.flatMap { (t, tb) -> listOf(t) + tb.header + tb.rows.flatten() }
 
-    @Test fun seventeenTools() = assertEquals(17, TOOLS.size)
+    @Test fun eighteenTools() = assertEquals(18, TOOLS.size)
 
     @Test fun everyToolRunsOnItsExampleInBothLanguages() {
         for (t in TOOLS) for (ta in listOf(false, true)) {
@@ -56,6 +56,29 @@ class LabToolsTest {
             assertTrue(en.none { it in '஀'..'௿' } && en.isNotBlank())
             assertTrue("$id Tamil error leaks English: $ta", latinWords(ta).isEmpty())
         }
+    }
+
+    @Test fun allTiedMannWhitneyIsNotReportedAsNonsignificant() {
+        val t = TOOLS.first { it.id == "mw" }
+        val inputs = t.defaults() + mapOf("a" to "1, 1, 1", "b" to "1, 1, 1")
+        val exception = runCatching { t.run(inputs, false) }.exceptionOrNull()
+        assertTrue(exception is StatException)
+        assertEquals("allIdentical", (exception as StatException).code)
+        val tamilMessage = errorText(exception, true)
+        assertTrue(tamilMessage.contains("வரையறுக்க"))
+    }
+
+    @Test fun heteroscedasticAnovaWarningRecommendsWelchNotAutomaticRanks() {
+        val tool = TOOLS.first { it.id == "anova" }
+        val inputs = tool.defaults() + mapOf(
+            "g" to "1,1.1,1.2,1.3; 3,5,8,12,16; 4,4.1,4.2,4.3"
+        )
+        val en = tool.run(inputs, false).notes.joinToString(" ")
+        val ta = tool.run(inputs, true).notes.joinToString(" ")
+        assertTrue(en.contains("Welch one-way ANOVA"))
+        assertTrue(en.contains("Unequal spread alone does not justify Kruskal"))
+        assertTrue(ta.contains("வெல்ச்"))
+        assertTrue(ta.contains("காரணமல்ல"))
     }
 
     @Test fun datasetsAnalyseInBothLanguages() {

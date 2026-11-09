@@ -12,6 +12,7 @@ import androidx.test.uiautomator.UiDevice
 import com.gasc.zoology.biostat.lab.TOOLS
 import org.junit.After
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -62,7 +63,10 @@ class AppFlowTest {
     private fun back() { dismissSystemDialogs(); device.pressBack(); rule.waitForIdle() }
 
     @Test fun homeShowsProgressAndSyllabus() {
-        waitText("0 of 44 lessons completed"); rule.onNodeWithText("Syllabus").assertExists(); shot("01_home")
+        waitText("0 of 44 lessons completed")
+        rule.onNodeWithTag("home-scroll").performScrollToNode(hasText("Syllabus"))
+        rule.onNodeWithText("Syllabus").assertExists()
+        shot("01_home")
     }
 
     @Test fun lessonCompleteBookmarkAndNote() {
@@ -89,6 +93,19 @@ class AppFlowTest {
         rule.onNodeWithText("Welch independent-samples t-test").assertExists(); shot("04_tree")
     }
 
+    @Test fun unequalVarianceDecisionSelectsNativeWelchAnova() {
+        tab("Lab"); tag("hub-tree")
+        tag("choice-1") // Compare independent groups
+        tag("choice-3") // Three or more independent groups
+        tag("choice-1") // Approximately normal, unequal variances
+        waitText("Welch one-way ANOVA")
+        rule.onNodeWithText("Open: Welch one-way ANOVA").performClick()
+        waitTag("run")
+        tag("run")
+        waitTag("result")
+        shot("11_welch_anova")
+    }
+
     @Test fun dataLabRunsGuidedAnalysis() {
         tab("Lab"); tag("hub-data"); tag("analyse-7"); waitTag("result"); rule.onNodeWithTag("result").assertExists(); shot("05_datalab")
     }
@@ -101,6 +118,59 @@ class AppFlowTest {
 
     @Test fun progressBackupScreenOffersExportImportReset() {
         tab("Lab"); tag("hub-progress"); waitTag("export"); rule.onNodeWithTag("import").assertExists(); rule.onNodeWithTag("reset").assertExists()
+    }
+
+
+    @Test fun malformedProgressImportPreservesSavedRecordsAndLegacyRoundTrip() {
+        val ctx = ApplicationProvider.getApplicationContext<Context>()
+        val c = courseContent()
+        val id = c.lessons.first().id
+        val card = c.flashcards.first().id
+        val qid = c.questions.first().id
+        val progress = ProgressStore(ctx)
+        progress.toggleLesson(id)
+        progress.toggleBookmark(id)
+        progress.toggleKnown(card)
+        progress.setNote(id, "குறிப்புகள் — sample note")
+        progress.recordAnswer(qid, true)
+        val expectedCompleted = progress.completed.toSet()
+        val expectedBookmarks = progress.bookmarks.toSet()
+        val expectedKnown = progress.known.toSet()
+        val expectedNotes = progress.notes.toMap()
+        val expectedRight = progress.answeredRight.toSet()
+        val expectedAttempts = progress.quizAttempts
+        val malformed = listOf(
+            """{"completed":{}}""",
+            """{"completed":[],"bookmarks":[],"known":[]}""",
+            """{"completed":["INVALID"],"bookmarks":[],"known":[],"notes":{}}""",
+            """{"completed":[],"bookmarks":[],"known":[],"notes":{"$id":3}}""",
+            """{"completed":[],"bookmarks":[],"known":[],"notes":{},"answeredRight":[true]}""",
+            """{"completed":[],"bookmarks":[],"known":[],"notes":{},"quizAttempts":"four"}"""
+        )
+        malformed.forEachIndexed { index, json ->
+            assertTrue("malformed file $index accepted", progress.importJson(json, c).isFailure)
+            assertEquals(expectedCompleted, progress.completed.toSet())
+            assertEquals(expectedBookmarks, progress.bookmarks.toSet())
+            assertEquals(expectedKnown, progress.known.toSet())
+            assertEquals(expectedNotes, progress.notes.toMap())
+            assertEquals(expectedRight, progress.answeredRight.toSet())
+            assertEquals(expectedAttempts, progress.quizAttempts)
+        }
+        // Legacy v3.2 does not have the native-only answeredRight or quizAttempts fields.
+        val legacy = """{"completed":["$id"],"bookmarks":["$id"],"known":["$card"],"notes":{"$id":"தமிழ் குறிப்பு"},"settings":{"tamil":true}}"""
+        assertTrue(progress.importJson(legacy, c).isSuccess)
+        assertEquals("தமிழ் குறிப்பு", progress.notes[id])
+        assertTrue(progress.tamil)
+        val exported = progress.exportJson()
+        progress.reset()
+        assertTrue(progress.importJson(exported, c).isSuccess)
+        assertEquals("தமிழ் குறிப்பு", progress.notes[id])
+        val reopened = ProgressStore(ctx)
+        assertEquals(progress.completed.toSet(), reopened.completed.toSet())
+        assertEquals(progress.bookmarks.toSet(), reopened.bookmarks.toSet())
+        assertEquals(progress.known.toSet(), reopened.known.toSet())
+        assertEquals(progress.notes.toMap(), reopened.notes.toMap())
+        assertTrue(reopened.tamil)
     }
 
     private fun runEveryTool(tamil: Boolean) {
@@ -117,9 +187,9 @@ class AppFlowTest {
         }
     }
 
-    @Test fun allSeventeenToolsRunInEnglish() = runEveryTool(false)
+    @Test fun allEighteenToolsRunInEnglish() = runEveryTool(false)
 
-    @Test fun allSeventeenToolsRunInTamilWithoutEnglishLabels() { toTamil(); runEveryTool(true) }
+    @Test fun allEighteenToolsRunInTamilWithoutEnglishLabels() { toTamil(); runEveryTool(true) }
 
     @Test fun badInputShowsLocalisedError() {
         tab("Lab"); tag("hub-tools"); tag("tool-descriptive")
@@ -135,6 +205,44 @@ class AppFlowTest {
         back(); tab("வினாடி வினா"); tag("start-quiz"); waitText("வினா 1 / 10")
         rule.onAllNodesWithText("Question 1 of 10").assertCountEquals(0)
         toEnglish(); waitText("Question 1 of 10")
+    }
+
+
+    @Test fun homeUnitExpandsIntoActualLessons() {
+        rule.onNodeWithTag("home-scroll").performScrollToNode(hasTestTag("home-unit-toggle-1"))
+        waitTag("home-lesson-U1_T01")
+        tag("home-unit-toggle-1")
+        rule.onAllNodesWithTag("home-lesson-U1_T01").assertCountEquals(0)
+        tag("home-unit-toggle-1")
+        waitTag("home-lesson-U1_T01")
+        tag("home-lesson-U1_T01")
+        waitTag("bookmark")
+        shot("08_home_inline_lesson")
+    }
+
+    @Test fun textbookUnitCollapsesAndRestoresItsLessons() {
+        tab("Lessons")
+        waitTag("lesson-U1_T01")
+        tag("textbook-unit-1")
+        rule.onAllNodesWithTag("lesson-U1_T01").assertCountEquals(0)
+        tag("textbook-unit-1")
+        waitTag("lesson-U1_T01")
+        tag("lesson-U1_T01")
+        waitTag("bookmark")
+        shot("09_textbook_inline_lesson")
+    }
+
+
+    @Test fun readerSectionsExpandWithoutLeavingThePage() {
+        tab("Lessons")
+        tag("lesson-U1_T01")
+        rule.onAllNodes(hasScrollToNodeAction())[0]
+            .performScrollToNode(hasTestTag("lesson-section-Definition"))
+        tag("lesson-section-Definition")
+        waitTag("section-body-Definition")
+        shot("10_reader_section_open")
+        tag("lesson-section-Definition")
+        rule.onAllNodesWithTag("section-body-Definition").assertCountEquals(0)
     }
 
     private fun courseContent() = kotlinx.coroutines.runBlocking { ContentRepository.load(InstrumentationRegistry.getInstrumentation().targetContext) }

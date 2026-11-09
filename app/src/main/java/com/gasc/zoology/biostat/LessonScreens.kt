@@ -90,15 +90,15 @@ fun LessonScreen(content: CourseContent, l: Lesson, store: ProgressStore, onOpen
 }
 
 private fun englishBody(s: androidx.compose.foundation.lazy.LazyListScope, l: Lesson) = with(s) {
-    if (l.objectives.isNotEmpty()) item { SectionCard("Learning objectives") { Bullets(l.objectives) } }
-    if (l.intro.isNotBlank()) item { SectionCard("Introduction") { Para(l.intro) } }
-    if (l.definition.isNotBlank()) item { SectionCard("Definition") { Para(l.definition) } }
-    if (l.history.isNotBlank()) item { SectionCard("Background") { Para(l.history) } }
-    if (l.need.isNotEmpty()) item { SectionCard("Why it matters") { Bullets(l.need) } }
-    if (l.classification.isNotEmpty()) item { SectionCard("Classification") { l.classification.forEach { Para("${it.name}: ${it.text}") } } }
-    if (l.explanation.isNotEmpty()) item { SectionCard("Explanation") { l.explanation.forEach { Para(it) } } }
+    if (l.objectives.isNotEmpty()) item { LessonSection("Learning objectives") { Bullets(l.objectives) } }
+    if (l.intro.isNotBlank()) item { LessonSection("Introduction") { Para(l.intro) } }
+    if (l.definition.isNotBlank()) item { LessonSection("Definition") { Para(l.definition) } }
+    if (l.history.isNotBlank()) item { LessonSection("Background") { Para(l.history) } }
+    if (l.need.isNotEmpty()) item { LessonSection("Why it matters") { Bullets(l.need) } }
+    if (l.classification.isNotEmpty()) item { LessonSection("Classification") { l.classification.forEach { Para("${it.name}: ${it.text}") } } }
+    if (l.explanation.isNotEmpty()) item { LessonSection("Explanation") { l.explanation.forEach { Para(it) } } }
     items(l.formulae) { f ->
-        SectionCard("Formula — ${f.name}") {
+        LessonSection("Formula — ${f.name}") {
             Mono(f.formula)
             if (f.meaning.isNotBlank()) Para(f.meaning)
             f.symbols.forEach { (k, v) -> Para("$k — $v") }
@@ -108,37 +108,37 @@ private fun englishBody(s: androidx.compose.foundation.lazy.LazyListScope, l: Le
             if (f.bio.isNotBlank()) Para("Biological example: ${f.bio}")
         }
     }
-    if (l.examples.isNotEmpty()) item { SectionCard("Worked examples") { l.examples.forEach { ExampleBlock(it) } } }
-    if (l.applications.isNotEmpty()) item { SectionCard("Applications") { l.applications.forEach { (field, notes) -> Para(field); Bullets(notes) } } }
-    if (l.advantages.isNotEmpty()) item { SectionCard("Advantages") { Bullets(l.advantages) } }
-    if (l.limitations.isNotEmpty()) item { SectionCard("Limitations") { Bullets(l.limitations) } }
-    if (l.precautions.isNotEmpty()) item { SectionCard("Precautions") { Bullets(l.precautions) } }
-    if (l.misconceptions.isNotEmpty()) item { SectionCard("Common misconceptions") { Bullets(l.misconceptions) } }
-    if (l.confused.isNotEmpty()) item { SectionCard("Often confused") { Bullets(l.confused) } }
-    if (l.exam.isNotEmpty()) item { SectionCard("Exam guidance") { Bullets(l.exam) } }
-    if (l.mnemonic.isNotBlank()) item { SectionCard("Memory aid") { Para(l.mnemonic) } }
-    if (l.summary.isNotEmpty()) item { SectionCard("Summary") { Bullets(l.summary) } }
-    if (l.selfcheck.isNotEmpty()) item { SectionCard("Self-check") { Bullets(l.selfcheck) } }
-    if (l.references.isNotEmpty()) item { SectionCard("References") { Bullets(l.references) } }
+    if (l.examples.isNotEmpty()) item { LessonSection("Worked examples") { l.examples.forEach { ExampleBlock(it) } } }
+    if (l.applications.isNotEmpty()) item { LessonSection("Applications") { l.applications.forEach { (field, notes) -> Para(field); Bullets(notes) } } }
+    if (l.advantages.isNotEmpty()) item { LessonSection("Advantages") { Bullets(l.advantages) } }
+    if (l.limitations.isNotEmpty()) item { LessonSection("Limitations") { Bullets(l.limitations) } }
+    if (l.precautions.isNotEmpty()) item { LessonSection("Precautions") { Bullets(l.precautions) } }
+    if (l.misconceptions.isNotEmpty()) item { LessonSection("Common misconceptions") { Bullets(l.misconceptions) } }
+    if (l.confused.isNotEmpty()) item { LessonSection("Often confused") { Bullets(l.confused) } }
+    if (l.exam.isNotEmpty()) item { LessonSection("Exam guidance") { Bullets(l.exam) } }
+    if (l.mnemonic.isNotBlank()) item { LessonSection("Memory aid") { Para(l.mnemonic) } }
+    if (l.summary.isNotEmpty()) item { LessonSection("Summary") { Bullets(l.summary) } }
+    if (l.selfcheck.isNotEmpty()) item { LessonSection("Self-check") { Bullets(l.selfcheck) } }
+    if (l.references.isNotEmpty()) item { LessonSection("References") { Bullets(l.references) } }
 }
 
 private fun tamilBody(s: androidx.compose.foundation.lazy.LazyListScope, t: TamilLesson, content: CourseContent, l: Lesson) = with(s) {
-    if (t.overview.isNotBlank()) item { SectionCard("மேலோட்டம்") { Para(t.overview) } }
-    if (t.definition.isNotBlank()) item { SectionCard("வரையறை") { Para(t.definition) } }
-    if (t.importance.isNotEmpty()) item { SectionCard("முக்கியத்துவம்") { Bullets(t.importance) } }
-    if (t.explanation.isNotEmpty()) item { SectionCard("விளக்கம்") { t.explanation.forEach { Para(it) } } }
+    if (t.overview.isNotBlank()) item { LessonSection("மேலோட்டம்") { Para(t.overview) } }
+    if (t.definition.isNotBlank()) item { LessonSection("வரையறை") { Para(t.definition) } }
+    if (t.importance.isNotEmpty()) item { LessonSection("முக்கியத்துவம்") { Bullets(t.importance) } }
+    if (t.explanation.isNotEmpty()) item { LessonSection("விளக்கம்") { t.explanation.forEach { Para(it) } } }
     items(l.formulae) { f ->
         val tf = content.extra.formulas["${l.id}|${f.name}"]
-        if (tf != null) SectionCard("சூத்திரம் — ${tf.name}") {
+        if (tf != null) LessonSection("சூத்திரம் — ${tf.name}") {
             Mono(f.formula); Para(tf.meaning); Para("பயன்பாடு: ${tf.use}")
         }
     }
-    if (t.bioExamples.isNotEmpty()) item { SectionCard("எடுத்துக்காட்டுகள்") { Bullets(t.bioExamples) } }
-    if (t.points.isNotEmpty()) item { SectionCard("முக்கியக் குறிப்புகள்") { Bullets(t.points) } }
-    if (t.exam.isNotEmpty()) item { SectionCard("தேர்வு வழிகாட்டி") { Bullets(t.exam) } }
-    if (t.mistakes.isNotEmpty()) item { SectionCard("பொதுவான தவறுகள்") { Bullets(t.mistakes) } }
-    if (t.summary.isNotEmpty()) item { SectionCard("சுருக்கம்") { Bullets(t.summary) } }
-    if (t.selfcheck.isNotEmpty()) item { SectionCard("சுயசோதனை") { Bullets(t.selfcheck) } }
+    if (t.bioExamples.isNotEmpty()) item { LessonSection("எடுத்துக்காட்டுகள்") { Bullets(t.bioExamples) } }
+    if (t.points.isNotEmpty()) item { LessonSection("முக்கியக் குறிப்புகள்") { Bullets(t.points) } }
+    if (t.exam.isNotEmpty()) item { LessonSection("தேர்வு வழிகாட்டி") { Bullets(t.exam) } }
+    if (t.mistakes.isNotEmpty()) item { LessonSection("பொதுவான தவறுகள்") { Bullets(t.mistakes) } }
+    if (t.summary.isNotEmpty()) item { LessonSection("சுருக்கம்") { Bullets(t.summary) } }
+    if (t.selfcheck.isNotEmpty()) item { LessonSection("சுயசோதனை") { Bullets(t.selfcheck) } }
 }
 
 @Composable
