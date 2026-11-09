@@ -1,4 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Biostatistics Mastery</string>
+    <string name="splash_tagline">For Zoology &amp; Life Sciences Students</string>
+    <string name="splash_icon_desc">Biostatistics Mastery logo</string>
+    <string name="toast_import_started">Import started</string>
+    <string name="toast_import_failed">Import failed</string>
+    <string name="toast_import_too_large">File too large to import</string>
+    <string name="toast_export_ok">Exported successfully</string>
+    <string name="toast_export_failed">Export failed</string>
+    <string name="toast_export_too_large">Progress data is too large to export</string>
+    <string name="share_subject">Biostatistics Mastery</string>
+    <string name="share_text">Check out Biostatistics Mastery — an offline app for Zoology students!\nLearn biostatistics with biological examples, calculators, quizzes &amp; Tamil support.</string>
+    <string name="share_chooser">Share via</string>
 </resources>

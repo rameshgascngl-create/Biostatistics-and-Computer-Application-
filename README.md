@@ -1,17 +1,21 @@
 # Biostatistics Mastery — Android App
 
-Student-oriented offline biostatistics learning app for Zoology & Life Sciences.
+Student-oriented offline biostatistics and computer-applications learning app for Zoology & Life Sciences (English + Tamil).
 
-## Build an APK (no Android Studio needed)
+- Package: `com.gasc.zoology.biostat` · Version 5.0.0 (versionCode 6) · target SDK 36 · min SDK 23
+- No Android permissions; fully offline.
 
-1. Go to the **Actions** tab in this repository.
-2. Select **Build Android APK**.
-3. Click **Run workflow** → **Run workflow**.
-4. When the job finishes (green check), download the **Biostatistics-APK** artifact.
-5. Install the APK on your phone.
+## Build
+1. Open the **Actions** tab → **Build Android APK and AAB** → *Run workflow* (it also runs on every pull request).
+2. Download `Biostatistics-debug-APK` (installable test build) or `Biostatistics-release-AAB` (Google Play upload).
+3. Signed release builds need the four `BIOSTAT_*` repository secrets — see `docs/PLAY_STORE_CHECKLIST.md`.
+
+## Tests
+`node tests/test_calculators.js app/src/main/assets/index.html` — checks the calculator cores against SciPy reference values.
+
+## Docs
+- `docs/PLAY_STORE_CHECKLIST.md` — submission steps and store-listing text
+- `docs/PRIVACY_POLICY.md` — policy draft (fill in the placeholders and host it)
 
 ## Note
-The full content file (`app/src/main/assets/index.html`) must be present for the complete app. If it is missing or is only a placeholder, replace it with the full HTML before building.
-
-## Package
-`com.gasc.zoology.biostat`
+All app content lives in `app/src/main/assets/index.html`.

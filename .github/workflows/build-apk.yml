@@ -1,8 +1,9 @@
-name: Build Android APK
+name: Build Android APK and AAB
 
 on:
   push:
     branches: [ main ]
+  pull_request:
   workflow_dispatch:
 
 jobs:
@@ -25,17 +26,53 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-          cache: gradle
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
 
-      - name: Build Release APK
-        run: gradle assembleRelease
+      - name: Ensure Android SDK platform 36 is installed
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-36" "build-tools;36.0.0"
 
-      - name: Upload APK artifact
+      - name: Restore upload keystore (only if secrets are configured)
+        env:
+          KS_B64: ${{ secrets.BIOSTAT_KEYSTORE_B64 }}
+        run: |
+          if [ -n "$KS_B64" ]; then
+            echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/upload.jks"
+            echo "BIOSTAT_KEYSTORE_PATH=$RUNNER_TEMP/upload.jks" >> "$GITHUB_ENV"
+            echo "Keystore restored: release artifacts will be signed."
+          else
+            echo "No keystore secret: release artifacts will be unsigned."
+          fi
+
+      - name: Build debug APK (installable for testing) and release APK + AAB
+        env:
+          BIOSTAT_KEYSTORE_PASSWORD: ${{ secrets.BIOSTAT_KEYSTORE_PASSWORD }}
+          BIOSTAT_KEY_ALIAS: ${{ secrets.BIOSTAT_KEY_ALIAS }}
+          BIOSTAT_KEY_PASSWORD: ${{ secrets.BIOSTAT_KEY_PASSWORD }}
+        run: gradle assembleDebug assembleRelease bundleRelease --stacktrace
+
+      - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: Biostatistics-APK
+          name: Biostatistics-debug-APK
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+      - name: Upload release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Biostatistics-release-APK
           path: app/build/outputs/apk/release/*.apk
+          if-no-files-found: warn
+
+      - name: Upload release AAB (for Google Play)
+        uses: actions/upload-artifact@v4
+        with:
+          name: Biostatistics-release-AAB
+          path: app/build/outputs/bundle/release/*.aab
           if-no-files-found: warn

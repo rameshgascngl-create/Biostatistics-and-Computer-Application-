@@ -1,0 +1,11 @@
+# Never commit signing material
+*.jks
+*.keystore
+keystore.properties
+local.properties
+.gradle/
+build/
+.idea/
+
+# Archives (build/export bundles should not be committed)
+*.zip
