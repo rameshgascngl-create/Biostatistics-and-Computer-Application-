@@ -17,7 +17,7 @@ class LabToolsTest {
     private fun allText(o: Out): List<String> = o.metrics.flatMap { listOf(it.first, it.second) } + o.notes +
         o.tables.flatMap { (t, tb) -> listOf(t) + tb.header + tb.rows.flatten() }
 
-    @Test fun seventeenTools() = assertEquals(17, TOOLS.size)
+    @Test fun eighteenTools() = assertEquals(18, TOOLS.size)
 
     @Test fun everyToolRunsOnItsExampleInBothLanguages() {
         for (t in TOOLS) for (ta in listOf(false, true)) {
