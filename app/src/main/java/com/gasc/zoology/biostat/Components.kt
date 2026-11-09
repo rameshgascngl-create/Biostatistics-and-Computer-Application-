@@ -19,7 +19,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 
 @Composable
 fun SectionCard(
@@ -30,8 +32,8 @@ fun SectionCard(
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(17.dp),
-        border = BorderStroke(1.dp, Color(0xFFE0E7F2)),
+        shape = RoundedCornerShape(18.dp),
+        border = BorderStroke(1.dp, Color(0xFFD8E4F2)),
         colors = CardDefaults.cardColors(
             containerColor = if (tamil) MaterialTheme.colorScheme.tertiaryContainer
             else MaterialTheme.colorScheme.surface
@@ -50,23 +52,28 @@ fun SectionCard(
 @Composable
 fun Bullets(items: List<String>) {
     items.forEach {
-        Row(Modifier.padding(vertical = 4.dp)) {
-            Text("•", modifier = Modifier.width(17.dp), color = MaterialTheme.colorScheme.secondary)
-            Text(it, style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface)
+        Row(Modifier.fillMaxWidth().padding(vertical = 5.dp)) {
+            Text("•", modifier = Modifier.width(20.dp), color = MaterialTheme.colorScheme.secondary)
+            Text(it, modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 1.45.em),
+                color = MaterialTheme.colorScheme.onSurface, textAlign = TextAlign.Justify)
         }
     }
 }
 
+/** Textbook paragraphs use true native Android paragraph justification (not WebView). */
 @Composable
 fun Para(text: String) {
-    Text(text, style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.padding(vertical = 4.dp))
+    Text(text,
+        modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp),
+        style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 1.5.em),
+        textAlign = TextAlign.Justify,
+        color = MaterialTheme.colorScheme.onSurface)
 }
 
 @Composable
 fun Mono(text: String) {
-    Text(text, style = MaterialTheme.typography.bodyMedium, fontFamily = FontFamily.Monospace,
-        color = MaterialTheme.colorScheme.onSurface,
-        modifier = Modifier.padding(vertical = 4.dp))
+    Text(text, style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 1.45.em),
+        fontFamily = FontFamily.Monospace, color = MaterialTheme.colorScheme.onSurface,
+        modifier = Modifier.padding(vertical = 5.dp))
 }
