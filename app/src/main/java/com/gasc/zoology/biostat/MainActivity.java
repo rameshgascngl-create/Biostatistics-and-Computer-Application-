@@ -1,6 +1,7 @@
 package com.gasc.zoology.biostat;
 
 import android.annotation.SuppressLint;
+import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
@@ -8,7 +9,9 @@ import android.os.Bundle;
 import android.print.PrintAttributes;
 import android.print.PrintDocumentAdapter;
 import android.print.PrintManager;
+import android.view.View;
 import android.webkit.JavascriptInterface;
+import android.webkit.RenderProcessGoneDetail;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
@@ -20,16 +23,24 @@ import androidx.activity.OnBackPressedCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
 
-import java.io.BufferedReader;
+import org.json.JSONObject;
+
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 
 public class MainActivity extends AppCompatActivity {
     private WebView webView;
     private SharedPreferences prefs;
     private static final String PREFS_NAME = "BiostatProgress";
+    private static final int MAX_IMPORT_BYTES = 2_000_000;
+    private static final int MAX_EXPORT_CHARS = 2_000_000;
     private ValueCallback<Uri[]> filePathCallback;
     private String pendingExportData;
 
@@ -61,6 +72,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        applyWindowInsets();
 
         prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
 
@@ -69,6 +81,24 @@ public class MainActivity extends AppCompatActivity {
         setupBackHandler();
 
         webView.loadUrl("file:///android_asset/index.html");
+    }
+
+    /**
+     * targetSdk 35+ draws edge-to-edge. Pad the root so the WebView sits between
+     * the system bars and the display cutout (and above the keyboard).
+     */
+    private void applyWindowInsets() {
+        View root = findViewById(R.id.root);
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+        WindowCompat.getInsetsController(getWindow(), root).setAppearanceLightStatusBars(true);
+        WindowCompat.getInsetsController(getWindow(), root).setAppearanceLightNavigationBars(true);
+        ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
+            Insets bars = insets.getInsets(
+                WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
+            Insets ime = insets.getInsets(WindowInsetsCompat.Type.ime());
+            v.setPadding(bars.left, bars.top, bars.right, Math.max(bars.bottom, ime.bottom));
+            return WindowInsetsCompat.CONSUMED;
+        });
     }
 
     private void setupBackHandler() {
@@ -104,8 +134,27 @@ public class MainActivity extends AppCompatActivity {
                 if ("file".equals(uri.getScheme()) && uri.getPath() != null && uri.getPath().startsWith("/android_asset/")) {
                     return false;
                 }
-                Intent intent = new Intent(Intent.ACTION_VIEW, uri);
-                try { startActivity(intent); } catch (Exception ignored) {}
+                // Only hand well-known safe schemes to other apps; block intent:, content:, file: etc.
+                String scheme = uri.getScheme();
+                if ("https".equals(scheme) || "http".equals(scheme) || "mailto".equals(scheme)) {
+                    try {
+                        startActivity(new Intent(Intent.ACTION_VIEW, uri));
+                    } catch (ActivityNotFoundException ignored) {
+                        // No app can handle this link; stay in the app.
+                    }
+                }
+                return true;
+            }
+
+            @Override
+            public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail) {
+                // The WebView renderer crashed or was killed: recreate instead of taking the app down.
+                if (webView != null) {
+                    ((android.view.ViewGroup) webView.getParent()).removeView(webView);
+                    webView.destroy();
+                    webView = null;
+                }
+                recreate();
                 return true;
             }
         });
@@ -130,27 +179,37 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void readAndImport(Uri uri) {
-        try (InputStream is = getContentResolver().openInputStream(uri);
-             BufferedReader reader = new BufferedReader(new InputStreamReader(is))) {
-            StringBuilder sb = new StringBuilder();
-            String line;
-            while ((line = reader.readLine()) != null) sb.append(line);
-            String json = sb.toString().replace("\\", "\\\\").replace("'", "\\'").replace("\n", "\\n");
-            webView.evaluateJavascript("if(typeof importProgressFromNative==='function')importProgressFromNative('" + json + "');", null);
-            Toast.makeText(this, "Import started", Toast.LENGTH_SHORT).show();
+        try (InputStream is = getContentResolver().openInputStream(uri)) {
+            if (is == null) throw new java.io.IOException("no stream");
+            ByteArrayOutputStream buf = new ByteArrayOutputStream();
+            byte[] chunk = new byte[8192];
+            int n;
+            while ((n = is.read(chunk)) != -1) {
+                if (buf.size() + n > MAX_IMPORT_BYTES) {
+                    Toast.makeText(this, R.string.toast_import_too_large, Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                buf.write(chunk, 0, n);
+            }
+            String json = new String(buf.toByteArray(), StandardCharsets.UTF_8);
+            // JSONObject.quote() yields a correctly escaped JavaScript string literal.
+            String js = "if(typeof importProgressFromNative==='function')importProgressFromNative("
+                + JSONObject.quote(json) + ");";
+            if (webView != null) webView.evaluateJavascript(js, null);
+            Toast.makeText(this, R.string.toast_import_started, Toast.LENGTH_SHORT).show();
         } catch (Exception e) {
-            Toast.makeText(this, "Import failed", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.toast_import_failed, Toast.LENGTH_SHORT).show();
         }
     }
 
     private void writeExport(Uri uri, String data) {
         try (OutputStream os = getContentResolver().openOutputStream(uri)) {
             if (os != null) {
-                os.write(data.getBytes());
-                Toast.makeText(this, "Exported successfully", Toast.LENGTH_SHORT).show();
+                os.write(data.getBytes(StandardCharsets.UTF_8));
+                Toast.makeText(this, R.string.toast_export_ok, Toast.LENGTH_SHORT).show();
             }
         } catch (Exception e) {
-            Toast.makeText(this, "Export failed", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.toast_export_failed, Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -171,11 +230,11 @@ public class MainActivity extends AppCompatActivity {
         public void shareApp() {
             Intent share = new Intent(Intent.ACTION_SEND);
             share.setType("text/plain");
-            share.putExtra(Intent.EXTRA_SUBJECT, "Biostatistics Mastery");
-            share.putExtra(Intent.EXTRA_TEXT,
-                "Check out Biostatistics Mastery \u2014 an offline app for Zoology students!\n" +
-                "Learn biostatistics with biological examples, calculators, quizzes & Tamil support.");
-            startActivity(Intent.createChooser(share, "Share via"));
+            share.putExtra(Intent.EXTRA_SUBJECT, getString(R.string.share_subject));
+            share.putExtra(Intent.EXTRA_TEXT, getString(R.string.share_text));
+            try {
+                startActivity(Intent.createChooser(share, getString(R.string.share_chooser)));
+            } catch (ActivityNotFoundException ignored) { }
         }
 
         @JavascriptInterface
@@ -191,7 +250,11 @@ public class MainActivity extends AppCompatActivity {
 
         @JavascriptInterface
         public void startExport(String jsonData) {
-            if (jsonData == null || jsonData.length() > 500000) return;
+            if (jsonData == null) return;
+            if (jsonData.length() > MAX_EXPORT_CHARS) {
+                runOnUiThread(() -> Toast.makeText(MainActivity.this, R.string.toast_export_too_large, Toast.LENGTH_LONG).show());
+                return;
+            }
             pendingExportData = jsonData;
             runOnUiThread(() -> exportLauncher.launch("BCA_Progress.json"));
         }

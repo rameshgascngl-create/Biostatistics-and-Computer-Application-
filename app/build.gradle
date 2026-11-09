@@ -2,16 +2,31 @@ plugins {
     id 'com.android.application'
 }
 
+// Release signing is read from environment variables (set as GitHub Actions
+// secrets). If they are absent the release build is produced unsigned.
+def ksPath = System.getenv('BIOSTAT_KEYSTORE_PATH')
+
 android {
     namespace 'com.gasc.zoology.biostat'
-    compileSdk 34
+    compileSdk 36
 
     defaultConfig {
         applicationId "com.gasc.zoology.biostat"
         minSdk 23
-        targetSdk 34
-        versionCode 5
-        versionName "3.2-complete"
+        targetSdk 36
+        versionCode 6
+        versionName "5.0.0"
+    }
+
+    signingConfigs {
+        if (ksPath) {
+            release {
+                storeFile file(ksPath)
+                storePassword System.getenv('BIOSTAT_KEYSTORE_PASSWORD')
+                keyAlias System.getenv('BIOSTAT_KEY_ALIAS')
+                keyPassword System.getenv('BIOSTAT_KEY_PASSWORD')
+            }
+        }
     }
 
     buildTypes {
@@ -19,6 +34,7 @@ android {
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            if (ksPath) signingConfig signingConfigs.release
         }
         debug {
             minifyEnabled false
@@ -30,11 +46,13 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
 }
 
 dependencies {
-    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+    implementation 'androidx.activity:activity:1.9.3'
+    implementation 'androidx.core:core:1.15.0'
 }

@@ -922,7 +922,7 @@ let routeReady=false;let routeIndex=0;let homeGuardArmed=false;
 function routeUrl(page,lesson){return lesson?`#lesson=${encodeURIComponent(lesson)}`:`#page=${encodeURIComponent(page)}`}
 function currentRoute(){let active=document.querySelector('.page.active');return{app:'BCA_GS',page:active?.id||'home',lesson:activeLesson?.id||null}}
 function setHistory(page,lesson,mode='push'){if(!routeReady)return;let nextIndex=mode==='replace'?routeIndex:routeIndex+1;let stateObj={app:'BCA_GS',page,lesson:lesson||null,index:nextIndex};let url=routeUrl(page,lesson);try{if(mode==='replace')history.replaceState(stateObj,'',url);else history.pushState(stateObj,'',url);routeIndex=nextIndex}catch(e){}}
-function armHomeGuard(){if(!routeReady||homeGuardArmed||routeIndex!==0||document.querySelector('.page.active')?.id!=='home')return;try{history.pushState({app:'BCA_GS',page:'home',lesson:null,index:0,guard:true},'',routeUrl('home'));homeGuardArmed=true}catch(e){}}
+function armHomeGuard(){return; /* v5.1: disabled so the Android back gesture can exit from Home */ if(!routeReady||homeGuardArmed||routeIndex!==0||document.querySelector('.page.active')?.id!=='home')return;try{history.pushState({app:'BCA_GS',page:'home',lesson:null,index:0,guard:true},'',routeUrl('home'));homeGuardArmed=true}catch(e){}}
 function updateBackButton(){let b=document.getElementById('backBtn'),home=document.querySelector('.page.active')?.id==='home'&&routeIndex===0;if(b){b.disabled=home;b.style.opacity=home?'.55':'1';b.setAttribute('aria-disabled',String(home))}}
 function go(id,opts={}){let p=document.getElementById(id);if(!p){toast('Page unavailable');return false}document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));p.classList.add('active');document.querySelectorAll('.navbtn').forEach(x=>x.classList.toggle('active',x.dataset.page===id));document.querySelectorAll('.bnbtn').forEach(x=>x.classList.toggle('active',x.dataset.page===id));closeMenu();window.scrollTo({top:0,behavior:opts.instant?'auto':'smooth'});if(id==='lessons')renderLessonCards();if(id==='concepts')renderGraph();if(id==='formulas')renderFormulas();if(id==='quiz')setupQuiz();if(id==='flashcards')setFlash();if(id==='notes')renderNotes();if(id==='validation')runValidation(false);if(id==='visuals'){drawSampleSVG();drawHistogram()}if(id==='datalab')renderDatasets();if(id==='analysislab')renderAnalysisLab();if(opts.history!==false)setHistory(id,null,opts.replace?'replace':'push');updateBackButton();return true}
 function openLesson(id,opts={}){let found=LESSONS.find(x=>x.id===id);if(!found){toast('Lesson unavailable');return false}activeLesson=found;renderReader();go('reader',{history:false,instant:opts.instant});if(opts.history!==false)setHistory('reader',id,opts.replace?'replace':'push');updateBackButton();return true}
@@ -956,7 +956,7 @@ function normalizeTamilLesson(t){
     importance:arr(t.importance),explanation:arr(t.explanation),summary:arr(t.summary)
   };
 }
-function creatorFooterHTML(){return `<footer class="creator-footer" aria-label="Creator"><p><strong>Created by R. Ramesh</strong></p></footer>`}
+function creatorFooterHTML(){return `<footer class="creator-footer" aria-label="Creator"><p><strong>Created by R. Ramesh</strong></p><p>Educational use only — not for clinical, diagnostic or regulatory decisions. Works fully offline and collects no personal data.</p></footer>`}
 function renderReader(){let L=activeLesson;if(!L)return;let idx=LESSONS.findIndex(x=>x.id===L.id),prev=LESSONS[idx-1],next=LESSONS[idx+1],t=normalizeTamilLesson(TAMIL_LESSONS[L.id]);let prereq=L.prereq.length?L.prereq.map(lessonLink).join(' '):'<span class="muted">No prerequisite lesson.</span>';let apps=Object.entries(L.applications).map(([k,v])=>`<tr><th>${k}</th><td>${v.join('<br>')}</td></tr>`).join('');let classes=L.classification.map(x=>`<tr><th>${x.name}</th><td>${x.text}</td></tr>`).join('');let ex=L.examples.map(x=>`<div class="formula-card"><span class="badge">${x.level}</span><h4>${x.q}</h4><ol>${x.steps.map(s=>`<li>${s}</li>`).join('')}</ol><div class="tip"><strong>Answer:</strong> ${x.answer}</div></div>`).join('');let related=L.related.map(lessonLink).join(' ');let note=state.notes[L.id]||'';let tamil=t?`<div class="tamil-box" id="tamilLessonBlock" ${tamilEnabled?'':'hidden'} lang="ta"><h3>${t.title}</h3><h4>அறிமுகம்</h4><p>${t.overview}</p><h4>வரையறை</h4><div class="note">${t.definition}</div><h4>முக்கியத்துவம்</h4>${list(t.importance)}<h4>விரிவான விளக்கம்</h4>${t.explanation.map(x=>`<p>${x}</p>`).join('')}<h4>உயிரியல் எடுத்துக்காட்டுகள்</h4>${list(t.bioExamples)}<h4>முக்கியக் கருத்துகள்</h4>${list(t.points)}<h4>தேர்வுக் குறிப்புகள்</h4>${list(t.exam)}<h4>பொதுவான தவறுகள்</h4>${list(t.mistakes)}<h4>சுருக்கம்</h4>${list(t.summary)}<h4>சுய மதிப்பீட்டு வினாக்கள்</h4><ol>${t.selfcheck.map(x=>`<li>${x}</li>`).join('')}</ol><p class="muted">குறிப்பு: ஆங்கிலப் பாட உரை விரிவான முதன்மை உள்ளடக்கம். தமிழ் பகுதி இயல்பான கல்வித் தமிழில் கருத்துப் புரிதல், மீள்பார்வை மற்றும் தேர்வுத் தயாரிப்புக்காக வழங்கப்பட்டுள்ளது.</p></div>`:'';let status=state.completed.includes(L.id)?'Completed':'In progress';document.getElementById('readerContent').innerHTML=`<article class="lesson-view"><div class="breadcrumb"><button type="button" onclick="go('home')">Home</button><span>›</span><button type="button" onclick="go('lessons')">All Units</button><span>›</span><span aria-current="page">Lesson ${L.sequence}</span></div><div class="card"><span class="badge">Core syllabus</span><h2>${tamilEnabled && t ? t.title : (L.sequence + '. ' + L.title)}</h2>${meta(L)}<div class="lesson-actions"><button type="button" class="btn secondary" onclick="toggleBookmark('${L.id}');renderReader()">${state.bookmarks.includes(L.id)?'★ Bookmarked':'☆ Bookmark'}</button><button type="button" class="btn good" onclick="toggleComplete('${L.id}');renderReader()">${state.completed.includes(L.id)?'✓ Completed':'Mark complete'}</button>${t?`<button type="button" class="btn secondary" onclick="toggleTamil()">தமிழ் விளக்கம்</button>`:''}<button type="button" class="btn secondary" onclick="go('lessons')">All lessons</button></div></div>${tamil}${section('Learning objectives',list(L.objectives),true)}${section('Concept map',renderMiniMap(L))}${section('Introduction',`<p>${L.intro}</p>`,true)}${section('Historical development',L.history?`<p>${L.history}</p>`:'')}${section('Definition',`<div class="note">${L.definition}</div>`)}${section('Need and importance',list(L.need))}${section('Classification',`<div class="tablewrap"><table><caption>Classification and explanation</caption>${classes}</table></div>`)}${section('Detailed explanation',L.explanation.map(x=>`<p>${x}</p>`).join(''))}${section('Advantages',list(L.advantages))}${section('Limitations',list(L.limitations))}${section('Precautions',list(L.precautions))}${section('Life-science applications',`<div class="tablewrap"><table><caption>Life-science applications</caption>${apps}</table></div>`)}${section('Worked examples',ex)}${section('Formulae and mathematical foundation',renderLessonFormulae(L))}${section('Academic integrity layer',`<h4>Common misconceptions</h4>${list(L.misconceptions)}<h4>Frequently confused concepts</h4>${list(L.confused)}<h4>Examiner expectations</h4>${list(L.exam)}`)}${section('Summary and revision',`${list(L.summary)}${L.mnemonic?`<div class="tip"><strong>Memory aid:</strong> ${L.mnemonic}</div>`:''}`)}${section('Self-check questions',`<ol>${L.selfcheck.map(x=>`<li>${x}</li>`).join('')}</ol>`)}${section('References for further reading',list(L.references))}${section('Prerequisites and related lessons',`<h4>Prerequisites</h4>${prereq}<h4>Related / next concepts</h4>${related||'<span class="muted">No linked lesson.</span>'}`)}${section('Personal notes',`<label for="lessonNote">Your note</label><textarea class="notes" id="lessonNote" placeholder="Write a private note stored on this device...">${escapeHtml(note)}</textarea><button type="button" class="btn" onclick="saveNote('${L.id}')">Save note</button>`)}<div class="reader-nav"><div>${prev?`<button type="button" class="btn secondary" onclick="openLesson('${prev.id}')">← ${prev.sequence}. ${prev.title}</button>`:''}</div><div class="centre"><strong>Lesson ${L.sequence} / ${LESSONS.length}</strong></div><div class="next">${next?`<button type="button" class="btn" onclick="openLesson('${next.id}')">${next.sequence}. ${next.title} →</button>`:`<button type="button" class="btn good" onclick="go('quiz')">Start course assessment →</button>`}</div></div>${L.id==='U5_T08'?creatorFooterHTML():''}</article>`}
 function renderLessonFormulae(L){return L.formulae.length?L.formulae.map(f=>formulaHTML(f,L.id)).join(''):'<p class="muted">This conceptual lesson does not require a formal equation.</p>'}
 function formulaHTML(f,id){return `<div class="formula-card" id="formula-${id}-${slug(f.name)}"><h3>${f.name}</h3><div class="formula">${f.formula}</div><p><strong>Meaning:</strong> ${f.meaning}</p><div class="tablewrap"><table><caption>Formula symbols</caption><tr><th>Symbol</th><th>Meaning</th></tr>${Object.entries(f.symbols).map(([k,v])=>`<tr><td>${k}</td><td>${v}</td></tr>`).join('')}</table></div><p><strong>Assumptions:</strong> ${f.assumptions.join('; ')}.</p><p><strong>Use:</strong> ${f.use}</p><p><strong>Do not use / caution:</strong> ${f.avoid}</p><div class="tip"><strong>Biological interpretation:</strong> ${f.bio}</div><button type="button" class="btn secondary" onclick="openLesson('${id}')">Open related lesson</button></div>`}
@@ -1062,38 +1062,135 @@ function calcEpi2x2(){let out=document.getElementById('epiResult');try{let vals=
 function updateSampleSizeFields(){let prop=document.getElementById('ssMode')?.value==='prop',mode=prop?'prop':'mean',lab=document.getElementById('ssScaleLabel'),inp=document.getElementById('ssScale'),mlab=document.getElementById('ssMarginLabel'),margin=document.getElementById('ssMargin'),changed=inp&&inp.dataset.ssMode!==mode;if(lab)lab.textContent=prop?'Expected proportion p (0–1)':'Expected standard deviation';if(mlab)mlab.textContent=prop?'Desired margin of error as a proportion (e.g., 0.05 = ±5 percentage points)':'Desired margin of error (same units as the mean)';if(inp){if(changed)inp.value=prop?'0.5':'12';inp.max=prop?'0.999999':'';inp.dataset.ssMode=mode}if(margin){if(changed)margin.value=prop?'0.05':'3';margin.max=prop?'0.999999':'';margin.step=prop?'0.01':'any'}}
 function sampleSizeCore(mode,z,scale,E,drop=0,N=NaN){if(!['mean','prop'].includes(mode))throw new Error('Unknown sample-size target.');if(!(z>0))throw new Error('Confidence multiplier must be positive.');if(!(drop>=0&&drop<.8))throw new Error('Loss/non-response must be between 0% and 79%.');let n0;if(mode==='mean'){if(!(scale>0))throw new Error('Expected SD must be positive.');if(!(E>0))throw new Error('Margin of error must be positive.');n0=(z*scale/E)**2}else{if(!(scale>0&&scale<1))throw new Error('Expected proportion p must be between 0 and 1.');if(!(E>0&&E<1))throw new Error('For a proportion, enter margin of error as a proportion between 0 and 1; for ±5 percentage points enter 0.05.');n0=z*z*scale*(1-scale)/(E*E)}let finiteN=Number.isFinite(N);if(finiteN&&(!Number.isInteger(N)||N<2))throw new Error('Finite population size must be a whole number of at least 2.');let fpc=finiteN?n0/(1+(n0-1)/N):n0,base=Math.ceil(fpc),adjusted=Math.ceil(fpc/(1-drop));return{mode,z,scale,E,drop,N:finiteN?N:NaN,n0,fpc,base,adjusted,finiteN}}
 
+/* ===== v5.1 quick-calculator hardening: exact distributions, strict input parsing ===== */
+function normCdf(z){let q=regGammaQ(.5,z*z/2);return z>=0?1-.5*q:.5*q}
+function normInv(p){
+  if(!(p>0&&p<1))throw new Error('Probability must be between 0 and 1.');
+  const a=[-39.69683028665376,220.9460984245205,-275.9285104469687,138.357751867269,-30.66479806614716,2.506628277459239],
+        b=[-54.47609879822406,161.5858368580409,-155.6989798598866,66.80131188771972,-13.28068155288572],
+        c=[-.007784894002430293,-.3223964580411365,-2.400758277161838,-2.549732539343734,4.374664141464968,2.938163982698783],
+        d=[.007784695709041462,.3224671290700398,2.445134137142996,3.754408661907416],pl=.02425;let x;
+  if(p<pl){let q=Math.sqrt(-2*Math.log(p));x=(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1)}
+  else if(p<=1-pl){let q=p-.5,r=q*q;x=(((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q/(((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1)}
+  else{let q=Math.sqrt(-2*Math.log(1-p));x=-(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1)}
+  let e=normCdf(x)-p,u=e*Math.sqrt(2*Math.PI)*Math.exp(x*x/2);return x-u/(1+x*u/2)}
+/* Student-t quantile: P(T<=t)=p. Bracket expands automatically, so very small df / very high confidence stay correct. */
+function tQuantile(p,df){
+  if(!(p>0&&p<1)||!(df>0))return NaN;if(p===.5)return 0;if(p<.5)return -tQuantile(1-p,df);
+  let lo=0,hi=1;while(studentTCdf(hi,df)<p&&hi<1e12)hi*=2;
+  for(let i=0;i<200;i++){let m=(lo+hi)/2;if(studentTCdf(m,df)<p)lo=m;else hi=m}return(lo+hi)/2}
+/* Strict parsing: separators are comma/semicolon/whitespace; any non-numeric token is an error (no silent zeros). */
+function listFromInput(id,min=1,label='data'){let a=parseNumbersText(document.getElementById(id)?.value);if(a.length<min)throw new Error(`Enter at least ${min} numeric value${min===1?'':'s'} for ${label}.`);return a}
+function groupsFromInput(id,minGroups=2,minSize=2){
+  let g=String(document.getElementById(id)?.value??'').split(';').map(s=>s.trim()).filter(Boolean).map(s=>parseNumbersText(s));
+  if(g.length<minGroups)throw new Error(`Enter at least ${minGroups} groups separated by semicolons (;).`);
+  if(g.some(x=>x.length<minSize))throw new Error(`Each group needs at least ${minSize} values.`);return g}
+function rankWithTies(vals){
+  let idx=vals.map((v,i)=>i).sort((x,y)=>vals[x]-vals[y]),ranks=new Array(vals.length),tieSum=0,i=0;
+  while(i<idx.length){let j=i;while(j<idx.length&&vals[idx[j]]===vals[idx[i]])j++;let avg=(i+1+j)/2,t=j-i;for(let k=i;k<j;k++)ranks[idx[k]]=avg;if(t>1)tieSum+=t*t*t-t;i=j}
+  return{ranks,tieSum}}
+/* Exact distribution of the sum of j distinct ranks chosen from 1..N (used by Mann–Whitney and Wilcoxon exact p). */
+function subsetRankSumCounts(N,j){
+  let maxS=N*(N+1)/2,dp=Array.from({length:j+1},()=>new Float64Array(maxS+1));dp[0][0]=1;
+  for(let r=1;r<=N;r++)for(let c=Math.min(r,j);c>=1;c--){let prev=dp[c-1],cur=dp[c];for(let s=maxS;s>=r;s--)if(prev[s-r])cur[s]+=prev[s-r]}
+  return dp[j]}
 function mannWhitneyCore(a,b){
-  if(a.length<1||b.length<1)throw Error('Need data in both groups');
-  let combined=a.map(x=>({v:x,g:0})).concat(b.map(x=>({v:x,g:1}))).sort((p,q)=>p.v-q.v);
-  let ranks=combined.map((x,i)=>i+1);
-  // Handle ties by averaging
-  let i=0;while(i<combined.length){let j=i;while(j<combined.length&&combined[j].v===combined[i].v)j++;if(j>i+1){let avg=(ranks[i]+ranks[j-1])/2;for(let k=i;k<j;k++)ranks[k]=avg}i=j}
-  let R1=0;combined.forEach((x,i)=>{if(x.g===0)R1+=ranks[i]});
-  let n1=a.length,n2=b.length,U1=R1-n1*(n1+1)/2,U2=n1*n2-U1,U=Math.min(U1,U2);
-  let mu=n1*n2/2,sigma=Math.sqrt(n1*n2*(n1+n2+1)/12),z=(U-mu)/sigma;
-  return{U,U1,U2,z,R1,n1,n2};
-}
+  if(a.length<1||b.length<1)throw new Error('Need data in both groups.');
+  let n1=a.length,n2=b.length,N=n1+n2,{ranks,tieSum}=rankWithTies(a.concat(b));
+  let R1=0;for(let i=0;i<n1;i++)R1+=ranks[i];
+  let U1=R1-n1*(n1+1)/2,U2=n1*n2-U1,U=Math.min(U1,U2),mu=n1*n2/2;
+  let sigma=Math.sqrt(n1*n2/12*((N+1)-tieSum/(N*(N-1)))),z=sigma>0?(U-mu)/sigma:NaN,p,method;
+  if(tieSum===0&&N<=40){
+    let cnt=subsetRankSumCounts(N,n1),total=cnt.reduce((s,x)=>s+x,0),Rmin=U+n1*(n1+1)/2,cum=0;
+    for(let s=0;s<=Rmin;s++)cum+=cnt[s]||0;p=Math.min(1,2*cum/total);method='exact'}
+  else{let zc=sigma>0?(Math.abs(U-mu)-.5)/sigma:NaN;p=Number.isFinite(zc)?Math.min(1,2*(1-normCdf(Math.max(0,zc)))):NaN;method='normal approximation (tie-corrected, continuity-corrected)'}
+  return{U,U1,U2,z,R1,n1,n2,p,method,ties:tieSum>0}}
 function wilcoxonCore(d){
-  if(d.length<1)throw Error('Need paired differences');
-  let abs=d.map((x,i)=>({v:Math.abs(x),sign:Math.sign(x),i})).filter(x=>x.v>0).sort((a,b)=>a.v-b.v);
-  let ranks=abs.map((x,i)=>i+1);
-  let Wplus=0,Wminus=0;abs.forEach((x,i)=>{if(x.sign>0)Wplus+=ranks[i];else Wminus+=ranks[i]});
-  let W=Math.min(Wplus,Wminus),n=abs.length;
-  return{W,Wplus,Wminus,n};
-}
+  if(d.length<1)throw new Error('Need paired differences.');
+  let nz=d.filter(x=>x!==0),n=nz.length;if(n<1)throw new Error('All differences are zero; the test is undefined.');
+  let{ranks,tieSum}=rankWithTies(nz.map(Math.abs)),Wplus=0,Wminus=0;nz.forEach((x,i)=>{if(x>0)Wplus+=ranks[i];else Wminus+=ranks[i]});
+  let W=Math.min(Wplus,Wminus),p,method;
+  if(tieSum===0&&n<=30){// distribution of sum of any subset of ranks 1..n (each rank in or out)
+    let maxS=n*(n+1)/2,dp=new Float64Array(maxS+1);dp[0]=1;for(let r=1;r<=n;r++)for(let s=maxS;s>=r;s--)dp[s]+=dp[s-r];
+    let cum=0;for(let s=0;s<=W;s++)cum+=dp[s];p=Math.min(1,2*cum/Math.pow(2,n));method='exact'}
+  else{let mean=n*(n+1)/4,sd=Math.sqrt(n*(n+1)*(2*n+1)/24-tieSum/48),zc=sd>0?(Math.abs(W-mean)-.5)/sd:NaN;p=Number.isFinite(zc)?Math.min(1,2*(1-normCdf(Math.max(0,zc)))):NaN;method='normal approximation (tie-corrected, continuity-corrected)'}
+  return{W,Wplus,Wminus,n,p,method}}
 function ciMeanCore(data,conf){
-  if(data.length<2)throw Error('Need n≥2');
-  let n=data.length,mean=data.reduce((a,b)=>a+b,0)/n;
-  let sd=Math.sqrt(data.reduce((a,b)=>a+(b-mean)**2,0)/(n-1));
-  let se=sd/Math.sqrt(n);
-  let tcrit=conf>=0.99?2.576:conf>=0.95?1.96:1.645;
-  if(n<30)tcrit=conf>=0.95?2.0:1.7;
-  return{mean,sd,se,lower:mean-tcrit*se,upper:mean+tcrit*se,conf};
-}
-function zScoreCore(x,mean,sd){
-  if(sd<=0)throw Error('SD must be positive');
-  return{z:(x-mean)/sd,x,mean,sd};
-}
+  if(data.length<2)throw new Error('Need at least two observations.');
+  if(!(conf>0&&conf<1))throw new Error('Confidence level must be between 0 and 1 (for example 0.95).');
+  let n=data.length,mean=data.reduce((a,b)=>a+b,0)/n,sd=Math.sqrt(data.reduce((a,b)=>a+(b-mean)**2,0)/(n-1)),se=sd/Math.sqrt(n);
+  let tcrit=tQuantile(1-(1-conf)/2,n-1);return{mean,sd,se,tcrit,df:n-1,lower:mean-tcrit*se,upper:mean+tcrit*se,conf}}
+function zScoreCore(x,mean,sd){if(!(sd>0))throw new Error('SD must be positive.');return{z:(x-mean)/sd,x,mean,sd}}
+/* Non-central t CDF by numerical integration of P(T<=t)=∫Φ(t·u/√df−δ)·h(u)du, h = density of √(χ²_df)·(√df-scaled). */
+function nctCdf(t,df,delta){
+  let logC=Math.log(2)-df/2*Math.log(2)-logGamma(df/2),hi=Math.sqrt(df)+12,N=4000,h=hi/N,sum=0;
+  for(let i=0;i<=N;i++){let u=i*h,dens;
+    if(u===0)dens=df===1?Math.exp(logC):0;else dens=Math.exp(logC+(df-1)*Math.log(u)-u*u/2);
+    let f=normCdf(t*u/Math.sqrt(df)-delta)*dens,w=(i===0||i===N)?1:(i%2?4:2);sum+=w*f}
+  return Math.min(1,Math.max(0,sum*h/3))}
+/* Exact power of the two-sided one-sample / paired t-test (non-central t). */
+function powerMeanCore(n,delta,sd,alpha){
+  alpha=(alpha===undefined||alpha===null||alpha==='')?.05:alpha;
+  if(!(Number.isInteger(n)&&n>=2))throw new Error('Sample size n must be a whole number of at least 2.');
+  if(!(sd>0))throw new Error('SD must be positive.');if(!Number.isFinite(delta))throw new Error('Effect size must be a number.');
+  if(!(alpha>0&&alpha<1))throw new Error('Alpha must be between 0 and 1.');
+  let df=n-1,se=sd/Math.sqrt(n),ncp=Math.abs(delta)/se,tc=tQuantile(1-alpha/2,df);
+  let power=1-nctCdf(tc,df,ncp)+nctCdf(-tc,df,ncp);return{power:Math.min(1,Math.max(0,power)),n,delta,sd,se,df,alpha}}
+function qqDataCore(data){
+  if(data.length<3)throw new Error('Need at least three observations.');
+  let sorted=[...data].sort((a,b)=>a-b),n=sorted.length,mean=sorted.reduce((a,b)=>a+b,0)/n,sd=Math.sqrt(sorted.reduce((a,b)=>a+(b-mean)**2,0)/(n-1));
+  if(!(sd>0))throw new Error('All values are identical; a Q–Q plot is undefined.');
+  let zs=sorted.map((x,i)=>normInv((i+1-.375)/(n+.25))),mz=zs.reduce((a,b)=>a+b,0)/n,sxy=0,szz=0,sxx=0;
+  sorted.forEach((x,i)=>{sxy+=(x-mean)*(zs[i]-mz);szz+=(zs[i]-mz)**2;sxx+=(x-mean)**2});
+  let points=sorted.map((x,i)=>({sample:x,z:zs[i],theoretical:mean+sd*zs[i]}));return{points,mean,sd,n,r:sxy/Math.sqrt(sxx*szz)}}
+function hardyWeinbergCore(obs){
+  if(!Array.isArray(obs)||obs.length!==3)throw new Error('Enter exactly three genotype counts in the order AA, Aa, aa.');
+  assertCounts(obs,'Genotype counts');let n=obs[0]+obs[1]+obs[2];if(!(n>0))throw new Error('Total count must be positive.');
+  let p=(2*obs[0]+obs[1])/(2*n),q=1-p,exp=[p*p*n,2*p*q*n,q*q*n];
+  if(exp.some(e=>e<=0))throw new Error('One allele is absent from the sample; the test is not applicable.');
+  let chi=obs.reduce((s,o,i)=>s+(o-exp[i])**2/exp[i],0);
+  return{chi,df:1,n,exp,p,q,pv:chiSquareP(chi,1),lowExpected:exp.some(e=>e<5)}}
+function kruskalWallisCore(groups){
+  if(groups.length<2)throw new Error('Need at least two groups.');
+  let combined=[],gIdx=[];groups.forEach((g,gi)=>g.forEach(v=>{combined.push(v);gIdx.push(gi)}));
+  let n=combined.length,{ranks,tieSum}=rankWithTies(combined),R=groups.map(()=>0),ni=groups.map(g=>g.length);
+  ranks.forEach((r,i)=>{R[gIdx[i]]+=r});
+  let H=12/(n*(n+1))*R.reduce((s,r,i)=>s+r*r/ni[i],0)-3*(n+1),C=1-tieSum/(n*n*n-n);
+  if(!(C>0))throw new Error('All observations are identical; the test is undefined.');H/=C;
+  let df=groups.length-1;return{H,df,n,R,ni,p:chiSquareP(H,df)}}
+/* Studentized range distribution (for Tukey HSD): P(Q<=q) for k means and df error degrees of freedom. */
+function _phiFast(z){let x=-z/Math.SQRT2,az=Math.abs(x),t=1/(1+.5*az),r=t*Math.exp(-az*az-1.26551223+t*(1.00002368+t*(.37409196+t*(.09678418+t*(-.18628806+t*(.27886807+t*(-1.13520398+t*(1.48851587+t*(-.82215223+t*.17087277)))))))));return .5*(x>=0?r:2-r)}
+function studentizedRangeCdf(q,k,df){
+  if(!(q>0))return 0;
+  const Z0=-8,Z1=8,NZ=160,hz=(Z1-Z0)/NZ,zs=[],phi=[],Phi=[];
+  for(let i=0;i<=NZ;i++){let z=Z0+i*hz;zs.push(z);phi.push(Math.exp(-z*z/2)/Math.sqrt(2*Math.PI));Phi.push(_phiFast(z))}
+  const W=w=>{let s=0;for(let i=0;i<=NZ;i++){let d=Phi[i]-_phiFast(zs[i]-w);if(d<0)d=0;let f=phi[i]*Math.pow(d,k-1),c=(i===0||i===NZ)?1:(i%2?4:2);s+=c*f}return Math.min(1,k*s*hz/3)};
+  let lo=df<10?0:Math.max(0,1-10/Math.sqrt(2*df)),hi=1+10/Math.sqrt(2*df)+(df<5?6:0),NS=200,hs=(hi-lo)/NS,logC=Math.log(2)+df/2*Math.log(df/2)-logGamma(df/2),tot=0;
+  for(let i=0;i<=NS;i++){let s=lo+i*hs,dens;if(s===0)dens=df===1?Math.exp(logC):0;else dens=Math.exp(logC+(df-1)*Math.log(s)-df*s*s/2);
+    if(dens===0&&i>0&&i<NS)continue;let c=(i===0||i===NS)?1:(i%2?4:2);tot+=c*dens*W(q*s)}
+  return Math.min(1,Math.max(0,tot*hs/3))}
+function studentizedRangeCrit(k,df,alpha){let lo=0,hi=10;while(1-studentizedRangeCdf(hi,k,df)>alpha&&hi<1e3)hi*=2;for(let i=0;i<40;i++){let m=(lo+hi)/2;if(1-studentizedRangeCdf(m,k,df)>alpha)lo=m;else hi=m}return(lo+hi)/2}
+function tukeyHSDCore(groups,alpha){
+  alpha=alpha||.05;let k=groups.length;if(k<2)throw new Error('Need at least two groups.');
+  let means=groups.map(g=>g.reduce((a,b)=>a+b,0)/g.length),ni=groups.map(g=>g.length),N=ni.reduce((a,b)=>a+b,0);
+  let SSW=groups.reduce((s,g,i)=>s+g.reduce((a,x)=>a+(x-means[i])**2,0),0),dfW=N-k;if(!(dfW>0))throw new Error('Need more observations than groups.');
+  let MSW=SSW/dfW;if(!(MSW>0))throw new Error('Within-group variance is zero; Tukey HSD is undefined.');
+  let qcrit=studentizedRangeCrit(k,dfW,alpha),pairs=[];
+  for(let i=0;i<k;i++)for(let j=i+1;j<k;j++){let diff=Math.abs(means[i]-means[j]),se=Math.sqrt(MSW*(1/ni[i]+1/ni[j])/2),q=diff/se,p=Math.max(0,1-studentizedRangeCdf(q,k,dfW));pairs.push({i,j,diff,q,se,p,hsd:qcrit*se,sig:p<alpha})}
+  return{pairs,MSW,dfW,means,qcrit,alpha,k}}
+function _p4(p){return !Number.isFinite(p)?'n/a':p<.0001?'< 0.0001':p.toFixed(4)}
+function calcKruskal(){let out=document.getElementById('kwResult');try{let r=kruskalWallisCore(groupsFromInput('kwData',2,1));out.textContent='H = '+r.H.toFixed(3)+' (tie-corrected)\ndf = '+r.df+'\np = '+_p4(r.p)+'\nn = '+r.n+'\nRank sums: '+r.R.map(x=>x.toFixed(1)).join(', ')}catch(e){out.textContent=e.message}}
+function calcTukey(){let out=document.getElementById('tukeyResult');try{let r=tukeyHSDCore(groupsFromInput('tukeyData',2,2));let lines=r.pairs.map(p=>'Groups '+(p.i+1)+' vs '+(p.j+1)+': diff = '+p.diff.toFixed(3)+', q = '+p.q.toFixed(3)+', p = '+_p4(p.p)+(p.sig?'  *':''));out.textContent='Tukey–Kramer HSD, α = '+r.alpha+'\nMSW = '+r.MSW.toFixed(4)+' (df = '+r.dfW+')\nCritical q = '+r.qcrit.toFixed(3)+'\n'+lines.join('\n')+'\n* significant at α = '+r.alpha}catch(e){out.textContent=e.message}}
+function calcPower(){let out=document.getElementById('powResult');try{let n=readRequiredNumber('powN','Sample size'),d=readRequiredNumber('powDelta','Effect'),s=readRequiredNumber('powSD','SD'),a=Number(document.getElementById('powAlpha').value),r=powerMeanCore(n,d,s,a);out.textContent='Power = '+(r.power*100).toFixed(1)+'%  (two-sided one-sample / paired t-test, exact non-central t)\nn = '+r.n+', effect = '+r.delta+', SD = '+r.sd+', α = '+r.alpha+'\nSE = '+r.se.toFixed(3)}catch(e){out.textContent=e.message}}
+function calcQQ(){let out=document.getElementById('qqResult');try{let r=qqDataCore(listFromInput('qqData',3,'the Q–Q plot'));let lines=r.points.slice(0,8).map(p=>'Sample: '+p.sample.toFixed(2)+' | Normal score z: '+p.z.toFixed(3)+' | Expected: '+p.theoretical.toFixed(2));out.textContent='n = '+r.n+', mean = '+r.mean.toFixed(2)+', SD = '+r.sd.toFixed(2)+'\nQ–Q correlation r = '+r.r.toFixed(4)+' (closer to 1 = more normal-like)\n'+lines.join('\n')+(r.points.length>8?'\n...':'')}catch(e){out.textContent=e.message}}
+function calcHW(){let out=document.getElementById('hwResult');try{let r=hardyWeinbergCore(listFromInput('hwObs',3,'genotype counts'));out.textContent='Allele frequencies: p(A) = '+r.p.toFixed(4)+', q(a) = '+r.q.toFixed(4)+'\nExpected (AA, Aa, aa): '+r.exp.map(x=>x.toFixed(1)).join(', ')+'\nχ² = '+r.chi.toFixed(3)+', df = 1 (3 classes − 1 − 1 estimated allele frequency)\np = '+_p4(r.pv)+'\nn = '+r.n+(r.lowExpected?'\nWarning: an expected count is below 5; the χ² approximation is unreliable.':'')}catch(e){out.textContent=e.message}}
+function calcMannWhitney(){let out=document.getElementById('mwResult');try{let r=mannWhitneyCore(listFromInput('mwA',1,'Group A'),listFromInput('mwB',1,'Group B'));out.textContent='U = '+r.U.toFixed(2)+'  (U1 = '+r.U1.toFixed(2)+', U2 = '+r.U2.toFixed(2)+')\nz = '+(Number.isFinite(r.z)?r.z.toFixed(3):'n/a')+'\np (two-sided) = '+_p4(r.p)+'  ['+r.method+']\nn1 = '+r.n1+', n2 = '+r.n2}catch(e){out.textContent=e.message}}
+function calcCI(){let out=document.getElementById('ciResult');try{let c=Number(document.getElementById('ciConf').value),r=ciMeanCore(listFromInput('ciData',2,'the sample'),c);out.textContent='Mean = '+r.mean.toFixed(3)+'\nSD = '+r.sd.toFixed(3)+'\nSE = '+r.se.toFixed(3)+'\nt critical (df = '+r.df+') = '+r.tcrit.toFixed(3)+'\n'+Math.round(c*100*10)/10+'% CI: ('+r.lower.toFixed(3)+', '+r.upper.toFixed(3)+')'}catch(e){out.textContent=e.message}}
+function calcZ(){let out=document.getElementById('zResult');try{let x=readRequiredNumber('zX','Value'),m=readRequiredNumber('zMean','Mean'),s=readRequiredNumber('zSD','SD'),r=zScoreCore(x,m,s);out.textContent='z = '+r.z.toFixed(3)+'\n(x = '+r.x+', mean = '+r.mean+', SD = '+r.sd+')'}catch(e){out.textContent=e.message}}
+
+
+
+
 function calcSampleSize(){let out=document.getElementById('ssResult');try{let mode=document.getElementById('ssMode').value,z=readRequiredNumber('ssConf','Confidence level'),scale=readRequiredNumber('ssScale',mode==='mean'?'Expected SD':'Expected proportion'),E=readRequiredNumber('ssMargin','Margin of error'),drop=readRequiredNumber('ssDrop','Loss/non-response')/100,N=readOptionalNumber('ssPopulation'),r=sampleSizeCore(mode,z,scale,E,drop,N);out.innerHTML=`<div class="headline">Approximate estimation sample size</div><div class="metric-grid">${metric('Unadjusted n',r.base)}${metric('With loss/non-response',r.adjusted)}${metric('Confidence z',fmt(r.z,3))}${r.finiteN?metric('Finite population N',r.N):''}</div><p><strong>Method:</strong> ${mode==='mean'?'n ≈ (z·SD/E)² for estimating a mean.':'n ≈ z²p(1−p)/E² for estimating a proportion.'} ${r.finiteN?'Finite-population correction was applied.':''}</p>${r.finiteN&&r.adjusted>r.N?'<p class="warn-inline">The loss/non-response-adjusted recruitment target exceeds the finite population size. The planned precision is not feasible under these assumptions without revising the design.</p>':''}<p class="method-note"><strong>Important:</strong> This is an estimation formula, not a power calculation. Intervention studies, hypothesis tests, cluster sampling and repeated measures require design-specific power analysis.</p>`}catch(e){out.innerHTML=`<span class="warn-inline">${escapeStat(e.message)}</span>`}}
 
 function renderAnalysisLab(){let tc=document.getElementById('toolCount'),dc=document.getElementById('datasetCount');if(tc)tc.textContent=document.querySelectorAll('#analysislab .calc-card').length;if(dc)dc.textContent=DATASETS.length;updateTFields();updateSampleSizeFields()}
@@ -1171,83 +1268,20 @@ if(show)toast(checks.every(c=>c[1])?'All implemented-feature checks passed':'Val
 }
 
 
-function kruskalWallisCore(groups){
-  if(groups.length<2)throw Error('Need at least 2 groups');
-  let combined=[],gIdx=[];
-  groups.forEach((g,gi)=>g.forEach(v=>{combined.push(v);gIdx.push(gi)}));
-  let n=combined.length;
-  let indexed=combined.map((v,i)=>({v,i,g:gIdx[i]})).sort((a,b)=>a.v-b.v);
-  let ranks=indexed.map((x,i)=>i+1);
-  // Ties
-  let i=0;while(i<indexed.length){let j=i;while(j<indexed.length&&indexed[j].v===indexed[i].v)j++;if(j>i+1){let avg=(ranks[i]+ranks[j-1])/2;for(let k=i;k<j;k++)ranks[k]=avg}i=j}
-  let R=groups.map(()=>0),ni=groups.map(g=>g.length);
-  indexed.forEach((x,i)=>{R[x.g]+=ranks[i]});
-  let H=12/(n*(n+1))*R.reduce((s,r,i)=>s+r*r/ni[i],0)-3*(n+1);
-  let df=groups.length-1;
-  return{H,df,n,R,ni};
-}
-function tukeyHSDCore(groups,alpha){
-  alpha=alpha||0.05;
-  let k=groups.length,means=groups.map(g=>g.reduce((a,b)=>a+b,0)/g.length);
-  let ni=groups.map(g=>g.length);
-  let all=groups.flat(),N=all.length;
-  let grand=all.reduce((a,b)=>a+b,0)/N;
-  let SSW=groups.reduce((s,g,i)=>s+g.reduce((a,x)=>a+(x-means[i])**2,0),0);
-  let dfW=N-k,MSW=SSW/dfW;
-  let pairs=[];
-  for(let i=0;i<k;i++)for(let j=i+1;j<k;j++){
-    let diff=Math.abs(means[i]-means[j]);
-    let se=Math.sqrt(MSW*(1/ni[i]+1/ni[j])/2);
-    let q=diff/se;
-    pairs.push({i,j,diff,q,se});
-  }
-  return{pairs,MSW,dfW,means};
-}
-function powerMeanCore(n,delta,sd,alpha){
-  alpha=alpha||0.05;
-  let se=sd/Math.sqrt(n);
-  let zAlpha=alpha<=0.01?2.576:1.96;
-  let zBeta=(delta/se)-zAlpha;
-  // Approximate power from z
-  let power=zBeta>2.5?0.99:zBeta>1.96?0.95:zBeta>1.64?0.90:zBeta>1.28?0.80:zBeta>0.84?0.70:0.50;
-  return{power,n,delta,sd,se};
-}
-function qqDataCore(data){
-  if(data.length<3)throw Error('Need n≥3');
-  let sorted=[...data].sort((a,b)=>a-b);
-  let n=sorted.length,mean=sorted.reduce((a,b)=>a+b,0)/n;
-  let sd=Math.sqrt(sorted.reduce((a,b)=>a+(b-mean)**2,0)/(n-1));
-  // Theoretical quantiles (approximate normal)
-  let points=sorted.map((x,i)=>{
-    let p=(i+0.5)/n;
-    let z=p<0.5?-Math.sqrt(-2*Math.log(p)):Math.sqrt(-2*Math.log(1-p));
-    if(p<0.5)z=-z;
-    return{sample:x,theoretical:mean+z*sd};
-  });
-  return{points,mean,sd,n};
-}
-function hardyWeinbergCore(obs,estimatedParams){
-  estimatedParams=estimatedParams||0;
-  let n=obs.reduce((a,b)=>a+b,0);
-  let k=obs.length;
-  let exp=obs.map(()=>n/k); // equal expected if no estimate
-  if(estimatedParams>0){
-    // Simple: reduce df
-  }
-  let chi=obs.reduce((s,o,i)=>s+(o-exp[i])**2/exp[i],0);
-  let df=k-1-estimatedParams;
-  if(df<1)throw Error('df must be ≥1');
-  return{chi,df,n,exp};
-}
 
-function calcKruskal(){let out=document.getElementById('kwResult');try{let raw=document.getElementById('kwData').value.split(';');let groups=raw.map(g=>g.split(',').map(Number).filter(x=>!isNaN(x)));let r=kruskalWallisCore(groups);out.textContent='H = '+r.H.toFixed(3)+'\ndf = '+r.df+'\nn = '+r.n+'\nRank sums: '+r.R.map(x=>x.toFixed(1)).join(', ')}catch(e){out.textContent=e.message}}
-function calcTukey(){let out=document.getElementById('tukeyResult');try{let raw=document.getElementById('tukeyData').value.split(';');let groups=raw.map(g=>g.split(',').map(Number).filter(x=>!isNaN(x)));let r=tukeyHSDCore(groups);let lines=r.pairs.map(p=>'Groups '+(p.i+1)+' vs '+(p.j+1)+': diff='+p.diff.toFixed(2)+', q='+p.q.toFixed(2));out.textContent='(Approximate q; compare to Tukey table) MSW = '+r.MSW.toFixed(3)+'\n'+lines.join('\n')}catch(e){out.textContent=e.message}}
-function calcPower(){let out=document.getElementById('powResult');try{let n=Number(document.getElementById('powN').value),d=Number(document.getElementById('powDelta').value),s=Number(document.getElementById('powSD').value),a=Number(document.getElementById('powAlpha').value);let r=powerMeanCore(n,d,s,a);out.textContent='(Approximate) Power ≈ '+(r.power*100).toFixed(0)+'%\nn = '+r.n+', effect = '+r.delta+', SD = '+r.sd+'\nSE = '+r.se.toFixed(3)}catch(e){out.textContent=e.message}}
-function calcQQ(){let out=document.getElementById('qqResult');try{let d=document.getElementById('qqData').value.split(',').map(Number).filter(x=>!isNaN(x));let r=qqDataCore(d);let lines=r.points.slice(0,8).map(p=>'Sample: '+p.sample.toFixed(1)+' | Theoretical: '+p.theoretical.toFixed(2));out.textContent='n = '+r.n+', mean = '+r.mean.toFixed(2)+', SD = '+r.sd.toFixed(2)+'\n'+lines.join('\n')+(r.points.length>8?'\n...':'')}catch(e){out.textContent=e.message}}
-function calcHW(){let out=document.getElementById('hwResult');try{let obs=document.getElementById('hwObs').value.split(',').map(Number).filter(x=>!isNaN(x));let m=Number(document.getElementById('hwM').value)||0;let r=hardyWeinbergCore(obs,m);out.textContent='χ² = '+r.chi.toFixed(3)+'\ndf = '+r.df+' (k−1−m)\nn = '+r.n+'\nExpected: '+r.exp.map(x=>x.toFixed(1)).join(', ')}catch(e){out.textContent=e.message}}
-function calcMannWhitney(){let out=document.getElementById('mwResult');try{let a=document.getElementById('mwA').value.split(',').map(Number).filter(x=>!isNaN(x));let b=document.getElementById('mwB').value.split(',').map(Number).filter(x=>!isNaN(x));let r=mannWhitneyCore(a,b);out.textContent='U = '+r.U.toFixed(2)+'\nU1 = '+r.U1.toFixed(2)+', U2 = '+r.U2.toFixed(2)+'\nz ≈ '+r.z.toFixed(3)+'\nn1 = '+r.n1+', n2 = '+r.n2}catch(e){out.textContent=e.message}}
-function calcCI(){let out=document.getElementById('ciResult');try{let d=document.getElementById('ciData').value.split(',').map(Number).filter(x=>!isNaN(x));let c=Number(document.getElementById('ciConf').value);let r=ciMeanCore(d,c);out.textContent='Mean = '+r.mean.toFixed(3)+'\nSD = '+r.sd.toFixed(3)+'\nSE = '+r.se.toFixed(3)+'\n'+(c*100)+'% CI: ('+r.lower.toFixed(3)+', '+r.upper.toFixed(3)+')'}catch(e){out.textContent=e.message}}
-function calcZ(){let out=document.getElementById('zResult');try{let x=Number(document.getElementById('zX').value),m=Number(document.getElementById('zMean').value),s=Number(document.getElementById('zSD').value);let r=zScoreCore(x,m,s);out.textContent='z = '+r.z.toFixed(3)+'\n(x = '+r.x+', mean = '+r.mean+', SD = '+r.sd+')'}catch(e){out.textContent=e.message}}
+
+
+
+
+
+
+
+
+
+
+
+
+
 function exportProgress(){let payload={...state,version:VERSION,build:BUILD,exportedAt:new Date().toISOString(),lessonVersions:Object.fromEntries(LESSONS.map(L=>[L.id,1]))};let json=JSON.stringify(payload,null,2);if(window.Android&&Android.startExport){Android.startExport(json);return}let blob=new Blob([json],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='BCA_Master_Progress.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500)}
 function importProgressFromNative(jsonStr){try{let x=JSON.parse(jsonStr);if(!x||typeof x!=='object')throw Error();let valid=id=>LESSONS.some(L=>L.id===id),validFlash=id=>FLASHCARDS.some(F=>F.id===id),cleanNotes={};if(x.notes&&typeof x.notes==='object'&&!Array.isArray(x.notes))Object.entries(x.notes).forEach(([id,value])=>{if(valid(id)&&typeof value==='string')cleanNotes[id]=value.slice(0,20000)});state={version:VERSION,build:BUILD,completed:[...new Set((Array.isArray(x.completed)?x.completed:[]).filter(valid))],bookmarks:[...new Set((Array.isArray(x.bookmarks)?x.bookmarks:[]).filter(valid))],notes:cleanNotes,known:[...new Set((Array.isArray(x.known)?x.known:[]).filter(validFlash))],settings:cleanSettings(x.settings||{})};applySettings();save();updateProgress();renderLessonCards();toast('Progress imported: '+state.completed.length+' completed')}catch(e){toast('Invalid progress data')}}
 function startNativeImport(){if(window.Android&&Android.startImport)Android.startImport()}function importProgress(ev){let f=ev.target.files[0];if(!f)return;if(f.size>1e6){toast('File too large');ev.target.value='';return}let r=new FileReader;r.onload=()=>{try{let x=JSON.parse(r.result);if(!x||typeof x!=='object')throw Error();let valid=id=>LESSONS.some(L=>L.id===id),validFlash=id=>FLASHCARDS.some(F=>F.id===id),cleanNotes={};if(x.notes&&typeof x.notes==='object'&&!Array.isArray(x.notes))Object.entries(x.notes).forEach(([id,value])=>{if(valid(id)&&typeof value==='string')cleanNotes[id]=value.slice(0,20000)});state={version:VERSION,build:BUILD,completed:[...new Set((Array.isArray(x.completed)?x.completed:[]).filter(valid))],bookmarks:[...new Set((Array.isArray(x.bookmarks)?x.bookmarks:[]).filter(valid))],notes:cleanNotes,known:[...new Set((Array.isArray(x.known)?x.known:[]).filter(validFlash))],settings:cleanSettings(x.settings||{})};applySettings();save();updateProgress();renderLessonCards();toast(`Progress imported: ${state.completed.length} completed, ${state.bookmarks.length} bookmarks`)}catch(e){toast('Invalid or incompatible progress file')}ev.target.value=''};r.onerror=()=>toast('Could not read file');r.readAsText(f)}
