@@ -189,6 +189,15 @@ fun LessonScreen(
                         label = { Text(tr("Full chapter", "முழுப் பாடம்")) }
                     )
                 }
+                if (bookMode) {
+                    Spacer(Modifier.height(9.dp))
+                    LinearProgressIndicator(
+                        progress = { (activePage + 1).toFloat() / totalPages },
+                        modifier = Modifier.fillMaxWidth().height(5.dp),
+                        color = Color(0xFF168C83),
+                        trackColor = Color(0xFFD8D4CC)
+                    )
+                }
             }
         }
         if (bookMode) {
