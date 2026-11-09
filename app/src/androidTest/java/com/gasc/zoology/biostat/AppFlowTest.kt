@@ -141,6 +141,8 @@ class AppFlowTest {
         val c = courseContent()
         tab(if (tamil) "பாடங்கள்" else "Lessons")
         for (l in c.lessons) {
+            waitTag("lesson-search")
+            rule.onNode(hasScrollAction()).performScrollToNode(hasTestTag("lesson-${l.id}"))
             tag("lesson-${l.id}")
             waitTag("bookmark")
             val title = if (tamil) c.tamilLessons.getValue(l.id).title else l.title
