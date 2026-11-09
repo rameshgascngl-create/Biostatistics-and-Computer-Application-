@@ -250,7 +250,7 @@ fun HomeScreen(
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 StudyAction(
-                    tr("Analysis Lab", "பகுப்பாய்வகம்"), tr("17 statistical tools", "17 புள்ளியியல் கருவிகள்"),
+                    tr("Analysis Lab", "பகுப்பாய்வகம்"), tr("18 statistical tools", "18 புள்ளியியல் கருவிகள்"),
                     Color(0xFFFFEEDD), Color(0xFF9A5423), onOpenLab, Modifier.weight(1f)
                 )
                 StudyAction(
