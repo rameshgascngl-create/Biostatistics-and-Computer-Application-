@@ -13,7 +13,7 @@ class TamilExtraTest {
         t("flashcards"), t("syllabus"), t("tamil_extra"))
 
     private val allowed = setOf("ANOVA", "SPSS", "CPU", "ALU", "RR", "OR", "AR", "SD", "SE", "IF", "SUM", "AVERAGE", "MS", "SS", "df",
-        "AA", "Aa", "aa", "Excel", "Welch", "Tukey", "pp", "Z", "NNT")
+        "AA", "Aa", "aa", "Excel", "Welch", "Tukey", "pp", "Z", "NNT", "yx", "xy", "sd", "pq")
     private fun latin(s: String) = Regex("[A-Za-z]{2,}").findAll(s).map { it.value }.filter { it !in allowed }.toList()
     private fun isTamil(s: String) = s.any { it in '஀'..'௿' }
 
@@ -57,7 +57,9 @@ class TamilExtraTest {
     @Test fun tamilQuizIsCompleteAndIndependent() {
         c.questions.forEach { q ->
             val tq = c.tamilQuestions.getValue(q.id)
-            assertTrue("${q.id} Tamil question", isTamil(tq.q)); assertTrue("${q.id} Tamil explanation", isTamil(tq.e))
+            assertTrue("${q.id} Tamil question", isTamil(tq.q))
+            // A few explanations are pure arithmetic (e.g. "z = (26−20)/3 = 2") and are identical in both languages.
+            assertTrue("${q.id} Tamil explanation", isTamil(tq.e) || !Regex("[A-Za-z]{3,}").containsMatchIn(tq.e))
             assertEquals("${q.id} Tamil option count", q.o.size, tq.o.size)
         }
     }

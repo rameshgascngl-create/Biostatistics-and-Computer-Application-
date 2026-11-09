@@ -563,7 +563,7 @@
      "text": "A significant F means at least one mean differs; follow with a post-hoc test."
     },
     "ta": {
-     "title": "ANOVA",
+     "title": "மாறுபாட்டுப் பகுப்பாய்வு (ANOVA)",
      "phrase": "“மாறுபாட்டுப் பகுப்பாய்வு – இரண்டுக்கு மேற்பட்ட சராசரிகள்”",
      "text": "முக்கியத்துவமுள்ள F குறைந்தது ஒரு சராசரி வேறுபடுவதைக் காட்டும்; அதன்பின் பிந்தைய சோதனை செய்யவும்."
     }

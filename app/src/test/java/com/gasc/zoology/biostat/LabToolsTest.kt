@@ -10,7 +10,7 @@ class LabToolsTest {
     /** Latin words that may legitimately appear inside Tamil text: statistical symbols, test and author names. */
     private val allowed = setOf("df", "SE", "SD", "CV", "ANOVA", "HSD", "MSW", "NNT", "NNH", "IQR", "RR", "OR", "Cohen", "Tukey", "Kramer",
         "Dunn", "Fisher", "Hardy", "Weinberg", "Pearson", "Spearman", "Mann", "Whitney", "Wilcoxon", "Welch", "Kruskal", "Wallis",
-        "AA", "Aa", "aa", "pp", "Col", "Row", "Q", "Z", "Y", "X", "MS", "SS", "dz", "Student", "JSON", "TA", "EN", "Strain", "Before", "After", "A", "B", "O", "AB")
+        "AA", "Aa", "aa", "pp", "Col", "Row", "Q", "Z", "Y", "X", "MS", "SS", "dz", "Student", "JSON", "TA", "EN", "Strain", "Before", "After", "A", "B", "O", "AB", "pq")
 
     private fun latinWords(s: String) = Regex("[A-Za-z]{2,}").findAll(s).map { it.value }.filter { it !in allowed }.toList()
 
