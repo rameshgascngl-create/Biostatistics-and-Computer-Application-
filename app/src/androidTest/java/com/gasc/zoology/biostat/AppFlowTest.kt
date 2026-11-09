@@ -7,6 +7,7 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiDevice
 import com.gasc.zoology.biostat.lab.TOOLS
 import org.junit.After
@@ -33,6 +34,16 @@ class AppFlowTest {
     @After fun tearDown() { scenario.close() }
 
     private fun shot(name: String) { device.executeShellCommand("screencap -p /sdcard/Download/qa/$name.png") }
+    /** CI emulators sometimes show a system "isn't responding" dialog that steals focus; press Wait so the test can continue. */
+    private fun dismissSystemDialogs() {
+        runCatching {
+            if (device.currentPackageName == "android" || device.hasObject(By.textContains("isn't responding"))) {
+                device.findObject(By.text("Wait"))?.click()
+                device.findObject(By.text("WAIT"))?.click()
+            }
+        }
+    }
+
     private fun fail(what: String, e: Throwable): Nothing {
         shot("FAIL_" + what.filter { it.isLetterOrDigit() }.take(30))
         val pkg = runCatching { device.currentPackageName }.getOrDefault("?")
@@ -41,14 +52,14 @@ class AppFlowTest {
         throw AssertionError("Waiting for $what failed: ${e.message}\n$tree", e)
     }
     private fun waitText(t: String, ms: Long = 20_000, substring: Boolean = false) =
-        try { rule.waitUntil(ms) { rule.onAllNodesWithText(t, substring = substring).fetchSemanticsNodes().isNotEmpty() } } catch (e: Throwable) { fail("text '$t'", e) }
+        try { rule.waitUntil(ms) { dismissSystemDialogs(); rule.onAllNodesWithText(t, substring = substring).fetchSemanticsNodes().isNotEmpty() } } catch (e: Throwable) { fail("text '$t'", e) }
     private fun waitTag(t: String, ms: Long = 20_000) =
-        try { rule.waitUntil(ms) { rule.onAllNodesWithTag(t).fetchSemanticsNodes().isNotEmpty() } } catch (e: Throwable) { fail("tag '$t'", e) }
+        try { rule.waitUntil(ms) { dismissSystemDialogs(); rule.onAllNodesWithTag(t).fetchSemanticsNodes().isNotEmpty() } } catch (e: Throwable) { fail("tag '$t'", e) }
     private fun tab(label: String) { rule.onNode(hasText(label) and hasClickAction()).performClick(); rule.waitForIdle() }
     private fun tag(t: String) { waitTag(t); val n = rule.onNodeWithTag(t); runCatching { n.performScrollTo() }; n.performClick(); rule.waitForIdle() }
     private fun toTamil() { rule.onNodeWithText("தமிழ்").performClick(); waitText("முகப்பு") }
     private fun toEnglish() { rule.onNodeWithText("English").performClick(); waitText("Home") }
-    private fun back() { device.pressBack(); rule.waitForIdle() }
+    private fun back() { dismissSystemDialogs(); device.pressBack(); rule.waitForIdle() }
 
     @Test fun homeShowsProgressAndSyllabus() {
         waitText("0 of 44 lessons completed"); rule.onNodeWithText("Syllabus").assertExists(); shot("01_home")
@@ -132,10 +143,10 @@ class AppFlowTest {
         for (l in c.lessons) {
             tag("lesson-${l.id}")
             waitTag("bookmark")
-            rule.onNode(hasScrollAction()).performScrollToNode(hasTestTag("complete"))
-            rule.onNodeWithTag("complete").assertExists()
             val title = if (tamil) c.tamilLessons.getValue(l.id).title else l.title
             rule.onAllNodesWithText(title).assertCountEquals(1)
+            rule.onNode(hasScrollAction()).performScrollToNode(hasTestTag("complete"))
+            rule.onNodeWithTag("complete").assertExists()
             back()
         }
     }
