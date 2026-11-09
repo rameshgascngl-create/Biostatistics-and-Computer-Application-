@@ -162,6 +162,19 @@ class AppFlowTest {
         shot("09_textbook_inline_lesson")
     }
 
+
+    @Test fun readerSectionsExpandWithoutLeavingThePage() {
+        tab("Lessons")
+        tag("lesson-U1_T01")
+        rule.onAllNodes(hasScrollToNodeAction())[0]
+            .performScrollToNode(hasTestTag("lesson-section-Definition"))
+        tag("lesson-section-Definition")
+        waitTag("section-body-Definition")
+        shot("10_reader_section_open")
+        tag("lesson-section-Definition")
+        rule.onAllNodesWithTag("section-body-Definition").assertCountEquals(0)
+    }
+
     private fun courseContent() = kotlinx.coroutines.runBlocking { ContentRepository.load(InstrumentationRegistry.getInstrumentation().targetContext) }
 
     /** CI emulators are slow and occasionally drop a frame (list scroll miss, Compose harness thread check). Retry one step up to 3 times,
