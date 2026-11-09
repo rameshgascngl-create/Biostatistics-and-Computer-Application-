@@ -27,7 +27,7 @@ fun PlotView(plot: Plot, modifier: Modifier = Modifier) {
     val axis = Color(0xFF55707A); val fill = MaterialTheme.colorScheme.primary; val line = Color(0xFFD1495B)
     val xLabel: String; val yLabel: String
     when (plot) {
-        is Plot.Hist -> { xLabel = tr("Value", "மதிப்பு"); yLabel = tr("Frequency", "அலைவெண்") }
+        is Plot.Hist -> { xLabel = tr("Value", "மதிப்பு"); yLabel = tr("Frequency", "நிகழ்வெண்") }
         is Plot.Scatter -> { xLabel = plot.xLabel; yLabel = plot.yLabel }
     }
     Column(modifier) {

@@ -17,7 +17,7 @@ object ContentRepository {
 
     fun parse(
         lessons: String, tamilLessons: String, questions: String,
-        tamilQuestions: String, flashcards: String, syllabus: String
+        tamilQuestions: String, flashcards: String, syllabus: String, tamilExtra: String = "{}"
     ) = CourseContent(
         lessons = json.decodeFromString(ListSerializer(Lesson.serializer()), lessons),
         tamilLessons = json.decodeFromString(
@@ -26,13 +26,14 @@ object ContentRepository {
         tamilQuestions = json.decodeFromString(
             MapSerializer(String.serializer(), TamilQuestion.serializer()), tamilQuestions),
         flashcards = json.decodeFromString(ListSerializer(Flashcard.serializer()), flashcards),
-        syllabus = json.decodeFromString(ListSerializer(SyllabusUnit.serializer()), syllabus)
+        syllabus = json.decodeFromString(ListSerializer(SyllabusUnit.serializer()), syllabus),
+        extra = json.decodeFromString(TamilExtra.serializer(), tamilExtra)
     )
 
     suspend fun load(ctx: Context): CourseContent = withContext(Dispatchers.Default) {
         parse(
             ctx.text("lessons"), ctx.text("tamil_lessons"), ctx.text("questions"),
-            ctx.text("tamil_questions"), ctx.text("flashcards"), ctx.text("syllabus")
+            ctx.text("tamil_questions"), ctx.text("flashcards"), ctx.text("syllabus"), ctx.text("tamil_extra")
         )
     }
 }

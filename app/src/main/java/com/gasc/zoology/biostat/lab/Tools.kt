@@ -58,21 +58,21 @@ private val confOpts = listOf(Opt("90", "90%", "90%"), Opt("95", "95%", "95%"), 
 val TOOLS: List<ToolDef> = listOf(
     ToolDef("descriptive", "Descriptive statistics", "விளக்க புள்ளியியல்",
         "Mean, median, mode, spread, skewness, 95% confidence interval and a histogram.",
-        "சராசரி, இடைநிலை, முகடு, பரவல், கோட்டம், 95% நம்பக இடைவெளி மற்றும் அலைவெண் வரைபடம்.",
+        "சராசரி, நடுக்கோடி, முகடு, பரவல், கோட்டம், 95% நம்பக இடைவெளி மற்றும் நிகழ்வெண் வரைபடம்.",
         listOf(Input("data", "Observations", "கண்டறிதல்கள்", "12, 15, 14, 10, 18, 15, 13, 16, 15, 11", hintEn = "Separate values by spaces, commas or semicolons", hintTa = "மதிப்புகளை இடைவெளி, காற்புள்ளி அல்லது அரைப்புள்ளியால் பிரிக்கவும்"))
     ) { m, ta ->
         val x = Parse.list(m["data"].orEmpty(), 1); val d = descriptive(x)
         val mode = if (d.modes.isEmpty()) (if (ta) "மீண்டும் வரும் மதிப்பு இல்லை" else "no repeated value") else d.modes.joinToString(", ") { fmt(it) }
         val met = listOf(
-            "n" to d.n.toString(), (if (ta) "சராசரி (x̄)" else "Mean") to fmt(d.mean), (if (ta) "இடைநிலை" else "Median") to fmt(d.median),
+            "n" to d.n.toString(), (if (ta) "சராசரி (x̄)" else "Mean") to fmt(d.mean), (if (ta) "நடுக்கோடி" else "Median") to fmt(d.median),
             (if (ta) "முகடு" else "Mode") to mode, (if (ta) "மாதிரி திட்ட விலக்கம் (s)" else "Sample SD") to fmt(d.sampleSD),
             (if (ta) "மாதிரி மாறுபாடு (s²)" else "Sample variance") to fmt(d.sampleVariance),
-            (if (ta) "சராசரியின் திட்டப் பிழை" else "SE of mean") to fmt(d.se), (if (ta) "மாறுபாட்டுக் கெழு (CV)" else "CV") to (if (d.cv.isNaN()) "—" else fmt(d.cv, 3) + "%"),
-            (if (ta) "குறைந்தபட்சம்" else "Minimum") to fmt(d.min), "Q1" to fmt(d.q1), "Q3" to fmt(d.q3), (if (ta) "அதிகபட்சம்" else "Maximum") to fmt(d.max),
-            "IQR" to fmt(d.iqr), (if (ta) "வீச்சு" else "Range") to fmt(d.range), (if (ta) "கோட்டம்" else "Skewness") to fmt(d.skew),
+            (if (ta) "சராசரியின் திட்டப் பிழை" else "SE of mean") to fmt(d.se), (if (ta) "மாறுபாட்டுக் குணகம் (CV)" else "CV") to (if (d.cv.isNaN()) "—" else fmt(d.cv, 3) + "%"),
+            (if (ta) "குறைந்தபட்சம்" else "Minimum") to fmt(d.min), (if (ta) "முதல் கால்மானம் (Q1)" else "Q1") to fmt(d.q1), (if (ta) "மூன்றாம் கால்மானம் (Q3)" else "Q3") to fmt(d.q3), (if (ta) "அதிகபட்சம்" else "Maximum") to fmt(d.max),
+            (if (ta) "இடைக்கால்மான வீச்சு (IQR)" else "IQR") to fmt(d.iqr), (if (ta) "வீச்சு" else "Range") to fmt(d.range), (if (ta) "கோட்டம்" else "Skewness") to fmt(d.skew),
             (if (ta) "95% நம்பக இடைவெளி" else "95% CI of mean") to if (d.n > 1) "${fmt(d.ciLow)} – ${fmt(d.ciHigh)}" else "—")
         val notes = listOf(
-            if (ta) "சராசரி எண்கணித மையத்தையும், இடைநிலை 50-ஆவது நூற்றுமானத்தையும், திட்ட விலக்கம் சராசரியைச் சுற்றிய வழக்கமான பரவலையும் தருகிறது. சராசரி ± திட்ட விலக்கத்தை முழுமையான விளக்கமாக ஏற்கும் முன் பரவல் வடிவத்தைப் பரிசீலிக்கவும்."
+            if (ta) "சராசரி எண்கணித மையத்தையும், நடுக்கோடி 50-ஆவது நூற்றுமானத்தையும், திட்ட விலக்கம் சராசரியைச் சுற்றிய வழக்கமான பரவலையும் தருகிறது. சராசரி ± திட்ட விலக்கத்தை முழுமையான விளக்கமாக ஏற்கும் முன் பரவல் வடிவத்தைப் பரிசீலிக்கவும்."
             else "The mean is the arithmetic centre, the median the 50th percentile and the sample SD the typical spread about the mean. Inspect the distribution before relying on mean ± SD alone.",
             if (d.n < 3) (if (ta) "கோட்டத்திற்குக் குறைந்தது 3 கண்டறிதல்கள் தேவை." else "Skewness needs at least 3 observations.") else "")
         Out(met, notes.filter { it.isNotEmpty() }, plot = histogram(x))
@@ -117,15 +117,15 @@ val TOOLS: List<ToolDef> = listOf(
 
     ToolDef("chigof", "Chi-square goodness of fit", "கை-வர்க்கப் பொருத்தச் சோதனை",
         "Compare observed category counts with expected counts (equal expectation if left blank).",
-        "கவனிக்கப்பட்ட எண்ணிக்கைகளை எதிர்பார்க்கப்படும் எண்ணிக்கைகளுடன் ஒப்பிடுதல் (வெறுமையாக விட்டால் சம எதிர்பார்ப்பு).",
-        listOf(Input("obs", "Observed counts", "கவனிக்கப்பட்ட எண்ணிக்கைகள்", "315, 108, 101, 32"),
+        "காணப்பட்ட எண்ணிக்கைகளை எதிர்பார்க்கப்படும் எண்ணிக்கைகளுடன் ஒப்பிடுதல் (வெறுமையாக விட்டால் சம எதிர்பார்ப்பு).",
+        listOf(Input("obs", "Observed counts", "காணப்பட்ட எண்ணிக்கைகள்", "315, 108, 101, 32"),
             Input("exp", "Expected counts (optional)", "எதிர்பார்க்கப்படும் எண்ணிக்கைகள் (விருப்பம்)", "312.75, 104.25, 104.25, 34.75", optional = true))
     ) { m, ta ->
         val obs = Parse.numbers(m["obs"].orEmpty()); val exp = Parse.numbers(m["exp"].orEmpty())
         val r = chiGof(obs, exp)
         val low = r.exp.any { it < 5 }
         val met = listOf("χ²" to fmt(r.chi), (if (ta) "சுதந்திர அளவு (df)" else "df") to r.df.toString(), "p" to pFmt(r.p), "N" to fmt(r.n))
-        val tb = Table(listOf(if (ta) "வகை" else "Category", if (ta) "கவனிக்கப்பட்டது" else "Observed", if (ta) "எதிர்பார்க்கப்பட்டது" else "Expected", if (ta) "(O−E)²/E" else "(O−E)²/E"),
+        val tb = Table(listOf(if (ta) "வகை" else "Category", if (ta) "காணப்பட்டது" else "Observed", if (ta) "எதிர்பார்க்கப்பட்டது" else "Expected", if (ta) "(O−E)²/E" else "(O−E)²/E"),
             r.obs.indices.map { listOf((it + 1).toString(), fmt(r.obs[it]), fmt(r.exp[it]), fmt(r.contrib[it])) })
         val notes = mutableListOf(decision(r.p, ta))
         if (low) notes += if (ta) "எச்சரிக்கை: சில எதிர்பார்க்கப்படும் எண்ணிக்கைகள் 5-க்குக் குறைவு; கை-வர்க்க தோராயம் நம்பகமற்றதாக இருக்கலாம் — வகைகளை இணைக்கவும் அல்லது துல்லிய சோதனையைப் பயன்படுத்தவும்." else "Warning: some expected counts are below 5, so the chi-square approximation may be unreliable — merge categories or use an exact test."
@@ -196,7 +196,7 @@ val TOOLS: List<ToolDef> = listOf(
         "All pairwise comparisons after ANOVA using the studentized range distribution.",
         "ANOVA-விற்குப் பின் ஸ்டூடண்டைஸ்டு வீச்சுப் பரவலைப் பயன்படுத்தி அனைத்து இணை ஒப்பீடுகள்.",
         listOf(Input("g", "Groups (separate groups with ;)", "குழுக்கள் (குழுக்களை ; கொண்டு பிரிக்கவும்)", "12, 15, 14, 11, 13; 14, 17, 15, 13, 16, 15; 16, 19, 15, 17, 18"),
-            Input("alpha", "Significance level α", "முக்கியத்துவ மட்டம் α", "0.05", Kind.CHOICE, listOf(Opt("0.10", "0.10", "0.10"), Opt("0.05", "0.05", "0.05"), Opt("0.01", "0.01", "0.01"))))
+            Input("alpha", "Significance level α", "முக்கியத்துவ நிலை α", "0.05", Kind.CHOICE, listOf(Opt("0.10", "0.10", "0.10"), Opt("0.05", "0.05", "0.05"), Opt("0.01", "0.01", "0.01"))))
     ) { m, ta ->
         val g = Parse.groups(m["g"].orEmpty(), 2, 2); val a = m["alpha"]?.toDoubleOrNull() ?: 0.05
         val r = tukeyHsd(g, a)
@@ -258,12 +258,12 @@ val TOOLS: List<ToolDef> = listOf(
         val exact = r.method == PMethod.EXACT
         val met = listOf("U" to fmt(r.u), "U₁ / U₂" to "${fmt(r.u1)} / ${fmt(r.u2)}", (if (ta) "z (தோராயம்)" else "z (approx.)") to fmt(r.z), (if (ta) "இருபக்க p" else "Two-sided p") to pFmt(r.p),
             (if (ta) "p முறை" else "p method") to if (exact) (if (ta) "துல்லியம்" else "exact") else (if (ta) "இயல்புத் தோராயம்" else "normal approximation"), "n₁, n₂" to "${r.n1}, ${r.n2}")
-        Out(met, listOf(decision(r.p, ta), if (ta) "அனுமானங்கள்: சார்பற்ற கண்டறிதல்கள்; வடிவம் ஒத்திருந்தால் இது நடுநிலைகளை ஒப்பிடுகிறது. இயல்புப் பரவல் தேவையில்லை." else "Assumptions: independent observations; if the distribution shapes are similar it compares medians. No normality is required.",
+        Out(met, listOf(decision(r.p, ta), if (ta) "அனுமானங்கள்: சார்பற்ற கண்டறிதல்கள்; வடிவம் ஒத்திருந்தால் இது நடுக்கோடிகளை ஒப்பிடுகிறது. இயல்புப் பரவல் தேவையில்லை." else "Assumptions: independent observations; if the distribution shapes are similar it compares medians. No normality is required.",
             if (r.ties) (if (ta) "இணைமதிப்புகள் உள்ளதால் இயல்புத் தோராயம் (இணைத் திருத்தத்துடன்) பயன்படுத்தப்பட்டது." else "Ties are present, so the normal approximation with a tie correction was used.") else ""))
             .let { it.copy(notes = it.notes.filter { n -> n.isNotEmpty() }) }
     },
 
-    ToolDef("wilcoxon", "Wilcoxon signed-rank test", "வில்காக்சன் குறியிட்ட தரவரிசைச் சோதனை",
+    ToolDef("wilcoxon", "Wilcoxon signed-rank test", "வில்காக்ஸன் குறியிட்ட தரநிலைச் சோதனை",
         "Rank-based test for paired samples (exact p for small tie-free samples).",
         "இணை மாதிரிகளுக்கான தரவரிசை அடிப்படைச் சோதனை (சிறிய, இணைமதிப்பற்ற மாதிரிகளுக்குத் துல்லிய p).",
         listOf(Input("a", "Before", "முன்", "42, 45, 40, 48, 44, 46, 41, 47"), Input("b", "After", "பின்", "46, 49, 42, 53, 47, 50, 40, 52"))
@@ -306,7 +306,7 @@ val TOOLS: List<ToolDef> = listOf(
         "Power of a two-sided one-sample or paired t-test, computed from the non-central t distribution.",
         "மைய-அற்ற t பரவலிலிருந்து கணக்கிடப்படும் இருபக்க ஒரு-மாதிரி/இணை t-சோதனையின் ஆற்றல்.",
         listOf(Input("n", "Sample size n", "மாதிரி அளவு n", "20", Kind.NUM), Input("delta", "True difference to detect", "கண்டறிய வேண்டிய உண்மை வேறுபாடு", "3", Kind.NUM),
-            Input("sd", "Standard deviation", "திட்ட விலக்கம்", "5", Kind.NUM), Input("alpha", "Significance level α", "முக்கியத்துவ மட்டம் α", "0.05", Kind.CHOICE, listOf(Opt("0.10", "0.10", "0.10"), Opt("0.05", "0.05", "0.05"), Opt("0.01", "0.01", "0.01"))))
+            Input("sd", "Standard deviation", "திட்ட விலக்கம்", "5", Kind.NUM), Input("alpha", "Significance level α", "முக்கியத்துவ நிலை α", "0.05", Kind.CHOICE, listOf(Opt("0.10", "0.10", "0.10"), Opt("0.05", "0.05", "0.05"), Opt("0.01", "0.01", "0.01"))))
     ) { m, ta ->
         val r = powerMean(num(m, "n", "n"), num(m, "delta", if (ta) "வேறுபாடு" else "Difference"), num(m, "sd", "SD"), m["alpha"]?.toDoubleOrNull())
         Out(listOf((if (ta) "ஆற்றல் (1 − β)" else "Power (1 − β)") to fmt(r.power, 4), (if (ta) "தரப்படுத்திய விளைவு" else "Standardised effect") to fmt(abs(r.delta) / r.sd), (if (ta) "திட்டப் பிழை" else "SE") to fmt(r.se), "df" to r.df.toString()),
@@ -317,7 +317,7 @@ val TOOLS: List<ToolDef> = listOf(
 
     ToolDef("qq", "Normal Q–Q plot", "இயல்பு Q–Q வரைபடம்",
         "Visual and numerical check of normality: sample quantiles against theoretical normal quantiles.",
-        "இயல்புத்தன்மையின் காட்சி, எண் சோதனை: மாதிரி நான்கிலொன்றுகளை இயல்புக் கோட்பாட்டு நான்கிலொன்றுகளுடன் ஒப்பிடுதல்.",
+        "இயல்புத்தன்மையின் காட்சி, எண் சோதனை: மாதிரி மதிப்புகளை இயல்புக் கோட்பாட்டு மதிப்புகளுடன் ஒப்பிடுதல்.",
         listOf(Input("data", "Observations", "கண்டறிதல்கள்", "12, 15, 14, 10, 18, 15, 13, 16, 15, 11, 17, 14"))
     ) { m, ta ->
         val q = qqData(Parse.list(m["data"].orEmpty(), 3))
@@ -348,7 +348,7 @@ val TOOLS: List<ToolDef> = listOf(
         val r = kruskalWallis(Parse.groups(m["g"].orEmpty(), 3, 2))
         val tb = Table(listOf(if (ta) "குழு" else "Group", "n", if (ta) "தரவரிசைக் கூட்டுத்தொகை" else "Rank sum"), r.ns.indices.map { listOf((it + 1).toString(), r.ns[it].toString(), fmt(r.rankSums[it])) })
         Out(listOf("H" to fmt(r.h), "df" to r.df.toString(), "p" to pFmt(r.p), "N" to r.n.toString()),
-            listOf(decision(r.p, ta), if (ta) "அனுமானங்கள்: சார்பற்ற கண்டறிதல்கள்; குழுக்களின் பரவல் வடிவம் ஒத்திருந்தால் இது நடுநிலைகளை ஒப்பிடுகிறது. p-மதிப்பு கை-வர்க்கத் தோராயம் (இணைத் திருத்தத்துடன்); ஒவ்வொரு குழுவிலும் குறைந்தது 5 கண்டறிதல்கள் இருந்தால் நம்பகமானது. குறிப்பிடத்தக்க H-க்குப் பின் இணை ஒப்பீட்டுச் சோதனைகள் (உம்: Dunn) தேவை."
+            listOf(decision(r.p, ta), if (ta) "அனுமானங்கள்: சார்பற்ற கண்டறிதல்கள்; குழுக்களின் பரவல் வடிவம் ஒத்திருந்தால் இது நடுக்கோடிகளை ஒப்பிடுகிறது. p-மதிப்பு கை-வர்க்கத் தோராயம் (இணைத் திருத்தத்துடன்); ஒவ்வொரு குழுவிலும் குறைந்தது 5 கண்டறிதல்கள் இருந்தால் நம்பகமானது. குறிப்பிடத்தக்க H-க்குப் பின் இணை ஒப்பீட்டுச் சோதனைகள் (உம்: Dunn) தேவை."
             else "Assumptions: independent observations; with similar shapes it compares medians. The p-value uses the chi-square approximation (with tie correction), reliable when each group has about 5 or more observations. After a significant H, pairwise post-hoc tests (e.g. Dunn) are needed."),
             listOf((if (ta) "தரவரிசைச் சுருக்கம்" else "Rank summary") to tb))
     }

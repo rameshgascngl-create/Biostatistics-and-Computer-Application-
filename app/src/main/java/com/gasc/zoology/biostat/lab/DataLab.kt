@@ -30,14 +30,14 @@ private fun tool(id: String, m: Map<String, String>, ta: Boolean) = TOOLS.first 
 
 val DATASETS: List<DataSet> = listOf(
     DataSet("Fish length sample", "மீன் நீள மாதிரி", "U1_T08",
-        "Calculate mean, median and mode; comment on spread and possible outlier.", "சராசரி, இடைநிலை, முகடு ஆகியவற்றைக் கணக்கிட்டு, பரவலையும் சாத்தியமான புறநிலை மதிப்பையும் பற்றிக் கருத்துரைக்கவும்.",
+        "Calculate mean, median and mode; comment on spread and possible outlier.", "சராசரி, நடுக்கோடி, முகடு ஆகியவற்றைக் கணக்கிட்டு, பரவலையும் சாத்தியமான புறநிலை மதிப்பையும் பற்றிக் கருத்துரைக்கவும்.",
         "12.4, 13.1, 13.5, 14.0, 14.0, 14.7, 15.2, 16.8") { ta -> tool("descriptive", mapOf("data" to "12.4,13.1,13.5,14.0,14.0,14.7,15.2,16.8"), ta) },
     DataSet("Blood-group counts", "இரத்த வகை எண்ணிக்கைகள்", "U1_T03",
         "Identify variable scale and prepare a percentage table and pie diagram.", "மாறியின் அளவீட்டுத் தரத்தை அடையாளம் கண்டு, சதவீத அட்டவணையும் வட்ட வரைபடமும் தயாரிக்கவும்.",
         "A: 42, B: 18, AB: 8, O: 52") { ta ->
         val labels = listOf("A", "B", "AB", "O"); val v = listOf(42.0, 18.0, 8.0, 52.0); val n = v.sum()
         Out(listOf("N" to fmt(n), (if (ta) "மிகப் பொதுவான வகை" else "Most frequent group") to "O"),
-            listOf(if (ta) "இது பெயரளவு (nominal) வகைத் தரவு; சராசரி பொருளற்றது — அலைவெண், சதவீதம், முகடு ஆகியவற்றைப் பயன்படுத்தவும்." else "This is nominal categorical data: a mean is meaningless — use frequencies, percentages and the mode."),
+            listOf(if (ta) "இது பெயரளவு (nominal) வகைத் தரவு; சராசரி பொருளற்றது — நிகழ்வெண், சதவீதம், முகடு ஆகியவற்றைப் பயன்படுத்தவும்." else "This is nominal categorical data: a mean is meaningless — use frequencies, percentages and the mode."),
             listOf((if (ta) "சதவீத அட்டவணை" else "Percentage table") to Table(listOf(if (ta) "வகை" else "Group", if (ta) "எண்ணிக்கை" else "Count", "%"),
                 labels.indices.map { listOf(labels[it], fmt(v[it]), fmt(100 * v[it] / n, 4)) })))
     },
@@ -57,7 +57,7 @@ val DATASETS: List<DataSet> = listOf(
     DataSet("Fish-length variability", "மீன் நீளத்தின் மாறுபாடு", "U2_T02",
         "Calculate sample variance and standard deviation; interpret variation in centimetres.", "மாதிரி மாறுபாடு, திட்ட விலக்கத்தைக் கணக்கிட்டு, சென்டிமீட்டரில் மாறுபாட்டை விளக்கவும்.",
         "12.1, 12.8, 13.0, 13.7, 14.4, 15.0") { ta -> tool("descriptive", mapOf("data" to "12.1,12.8,13.0,13.7,14.4,15.0"), ta) },
-    DataSet("Aquaculture strain comparison by CV", "மாறுபாட்டுக் கெழு மூலம் மீன்வளர்ப்பு இனங்களின் ஒப்பீடு", "U2_T03",
+    DataSet("Aquaculture strain comparison by CV", "மாறுபாட்டுக் குணகம் மூலம் மீன்வளர்ப்பு இனங்களின் ஒப்பீடு", "U2_T03",
         "Calculate CV for both strains and identify the more relatively variable strain.", "இரு இனங்களின் CV-ஐக் கணக்கிட்டு, ஒப்பீட்டளவில் அதிக மாறுபாடுள்ள இனத்தைக் கண்டறியவும்.",
         "Strain A: mean 250, SD 20; Strain B: mean 120, SD 15") { ta ->
         val cvA = 100 * 20.0 / 250; val cvB = 100 * 15.0 / 120
@@ -104,7 +104,7 @@ fun DataLabScreen(onOpenLesson: (String) -> Unit) {
         Text(tr("Biology data laboratory — ${DATASETS.size} datasets", "உயிரியல் தரவு ஆய்வகம் — ${DATASETS.size} தரவுத்தொகுப்புகள்"), style = MaterialTheme.typography.titleLarge)
         DATASETS.forEachIndexed { i, d ->
             SectionCard("${i + 1}. " + (if (ta) d.ta else d.en), Modifier.testTag("dataset-$i")) {
-                Mono(d.raw.let { raw -> if (ta) raw.replace("Observed", "கவனிக்கப்பட்டது").replace("expected proportions", "எதிர்பார்க்கும் விகிதங்கள்").replace("Before", "முன்").replace("after", "பின்").replace("Length", "நீளம்").replace("weight", "எடை").replace("Concentration", "செறிவு").replace("absorbance", "உறிஞ்சுதல்").replace("Strain", "இனம்").replace("mean", "சராசரி") else raw })
+                Mono(d.raw.let { raw -> if (ta) raw.replace("Observed", "காணப்பட்டது").replace("expected proportions", "எதிர்பார்க்கும் விகிதங்கள்").replace("Before", "முன்").replace("after", "பின்").replace("Length", "நீளம்").replace("weight", "எடை").replace("Concentration", "செறிவு").replace("absorbance", "உறிஞ்சுதல்").replace("Strain", "இனம்").replace("mean", "சராசரி") else raw })
                 Text((tr("Task: ", "பணி: ")) + (if (ta) d.taskTa else d.taskEn), style = MaterialTheme.typography.bodyMedium)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 6.dp)) {
                     Button(onClick = { results[i] = ta to d.analyse(ta) }, modifier = Modifier.testTag("analyse-$i")) { Text(tr("Guided analysis", "வழிகாட்டிய பகுப்பாய்வு")) }

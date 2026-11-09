@@ -81,7 +81,7 @@ private fun SamplingVisual() {
 @Composable
 private fun HistogramVisual() {
     var bins by rememberSaveable { mutableIntStateOf(5) }
-    SectionCard(tr("Histogram class width", "அலைவெண் வரைபட வகுப்பு அகலம்")) {
+    SectionCard(tr("Histogram class width", "நிகழ்வெண் வரைபட வகுப்பு அகலம்")) {
         Text(tr("Number of bins: $bins", "வகுப்புகளின் எண்ணிக்கை: $bins"))
         Slider(value = bins.toFloat(), onValueChange = { bins = it.toInt() }, valueRange = 3f..8f, steps = 4, modifier = Modifier.testTag("bins-slider"))
         val lo = HIST_DATA.min(); val w = (HIST_DATA.max() - lo) / bins

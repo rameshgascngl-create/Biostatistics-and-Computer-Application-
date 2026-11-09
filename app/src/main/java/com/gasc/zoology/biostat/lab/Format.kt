@@ -45,7 +45,7 @@ fun errorText(e: StatException, ta: Boolean): String {
         "tUndefined" -> t("The t statistic is undefined for these data.", "இத்தரவுக்கு t மதிப்பை வரையறுக்க இயலாது.")
         "gofNeed2" -> t("Goodness-of-fit needs at least 2 categories.", "பொருத்தப் பொருத்த சோதனைக்குக் குறைந்தது 2 வகைகள் தேவை.")
         "expPos", "expSame", "expSum" -> t("Expected values must be positive, equal in number to the observed counts, and sum to the observed total.",
-            "எதிர்பார்க்கப்படும் மதிப்புகள் நேர்மறையாகவும், கவனிக்கப்பட்ட எண்ணிக்கைகளுக்கு இணையான எண்ணிக்கையிலும், அவற்றின் மொத்தத்திற்குச் சமமான கூட்டுத்தொகையுடனும் இருக்க வேண்டும்.")
+            "எதிர்பார்க்கப்படும் மதிப்புகள் நேர்மறையாகவும், காணப்பட்ட எண்ணிக்கைகளுக்கு இணையான எண்ணிக்கையிலும், அவற்றின் மொத்தத்திற்குச் சமமான கூட்டுத்தொகையுடனும் இருக்க வேண்டும்.")
         "obsTotal", "margins" -> t("Every row and column total must be positive.", "ஒவ்வொரு வரிசை, நெடுவரிசை மொத்தமும் நேர்மறையாக இருக்க வேண்டும்.")
         "zeroVarXY" -> t("X and Y must both vary; correlation is undefined.", "X, Y இரண்டிலும் மாறுபாடு இருக்க வேண்டும்; ஒட்டுறவை வரையறுக்க இயலாது.")
         "pairNeed3" -> t("Correlation needs at least 3 pairs of equal length.", "ஒட்டுறவுக்குச் சம நீளமுள்ள குறைந்தது 3 இணைகள் தேவை.")

@@ -108,6 +108,8 @@ fun BiostatApp(content: CourseContent, store: ProgressStore) {
             composable("lab/tree") { com.gasc.zoology.biostat.lab.DecisionTreeScreen(onOpenTool = { nav.navigate("lab/tool/$it") }) }
             composable("lab/visuals") { com.gasc.zoology.biostat.lab.VisualsScreen() }
             composable("lab/data") { com.gasc.zoology.biostat.lab.DataLabScreen(onOpenLesson = { nav.navigate("lesson/$it") }) }
+            composable("lab/formulas") { FormulaScreen(content, store) }
+            composable("lab/toolkit") { ToolkitScreen(content, store) }
             composable("lab/progress") { ProgressScreen(content, store) }
             composable("lab/tool/{id}") { b -> com.gasc.zoology.biostat.lab.ToolScreen(b.arguments?.getString("id").orEmpty()) }
         }

@@ -73,13 +73,32 @@ import kotlinx.serialization.Serializable
     val unit: String, val title: String, val status: String = "", val topics: List<String> = emptyList()
 )
 
+@Serializable data class TamilFormula(val name: String = "", val meaning: String = "", val use: String = "")
+@Serializable data class TamilCard(val term: String = "", val definition: String = "")
+@Serializable data class TamilSyllabus(val title: String = "", val topics: List<String> = emptyList())
+@Serializable data class ToolkitText(
+    val title: String = "", val phrase: String = "", val text: String = "", val data: String = "", val task: String = "",
+    val lines: List<String> = emptyList()
+)
+@Serializable data class ToolkitItem(val en: ToolkitText = ToolkitText(), val ta: ToolkitText = ToolkitText())
+@Serializable data class Toolkit(
+    val mnemonics: List<ToolkitItem> = emptyList(), val problems: List<ToolkitItem> = emptyList(),
+    val cheat: List<ToolkitItem> = emptyList()
+)
+/** Tamil-mode content for parts of the course that the lesson JSON does not carry (formulae, cards, syllabus, toolkit). */
+@Serializable data class TamilExtra(
+    val formulas: Map<String, TamilFormula> = emptyMap(), val flashcards: Map<String, TamilCard> = emptyMap(),
+    val syllabus: List<TamilSyllabus> = emptyList(), val toolkit: Toolkit = Toolkit()
+)
+
 data class CourseContent(
     val lessons: List<Lesson>,
     val tamilLessons: Map<String, TamilLesson>,
     val questions: List<Question>,
     val tamilQuestions: Map<String, TamilQuestion>,
     val flashcards: List<Flashcard>,
-    val syllabus: List<SyllabusUnit>
+    val syllabus: List<SyllabusUnit>,
+    val extra: TamilExtra = TamilExtra()
 ) {
     fun lesson(id: String) = lessons.firstOrNull { it.id == id }
 }

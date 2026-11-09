@@ -22,6 +22,8 @@ private val entries = listOf(
     Entry("lab/tree", "Test decision tree", "சோதனைத் தேர்வு முடிவு மரம்", "Answer a few questions to choose the right statistical test.", "சில கேள்விகளுக்குப் பதிலளித்துச் சரியான புள்ளியியல் சோதனையைத் தேர்ந்தெடுக்கவும்."),
     Entry("lab/visuals", "Interactive visuals", "ஊடாடும் காட்சிகள்", "Sampling distribution, normal curve, regression and Q–Q demonstrations.", "மாதிரிப் பரவல், இயல்பு வளைவு, பின்னடைவு, Q–Q செயல்விளக்கங்கள்."),
     Entry("lab/data", "Data lab", "தரவு ஆய்வகம்", "Thirteen biological datasets with guided analysis.", "வழிகாட்டப்பட்ட பகுப்பாய்வுடன் பதின்மூன்று உயிரியல் தரவுத்தொகுப்புகள்."),
+    Entry("lab/formulas", "Formula explorer", "சூத்திரத் தேடல்", "All 43 formulae with meanings, searchable.", "பொருளுடன் அனைத்து 43 சூத்திரங்கள் — தேடலாம்."),
+    Entry("lab/toolkit", "Student toolkit", "மாணவர் கருவித்தொகுப்பு", "Mnemonics, extra problems and a formula cheat-sheet.", "நினைவுத் துணுக்குகள், கூடுதல் கணக்குகள், சூத்திரக் குறிப்புத்தாள்."),
     Entry("lab/progress", "Progress backup", "முன்னேற்றக் காப்பு", "Export or import your progress as a JSON file.", "உங்கள் முன்னேற்றத்தை JSON கோப்பாக ஏற்றுமதி/இறக்குமதி செய்யவும்.")
 )
 
