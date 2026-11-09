@@ -31,6 +31,12 @@ private val UnitTones = listOf(
     Color(0xFFC46E24), Color(0xFF4874B4), Color(0xFF008C6E)
 )
 
+// Each syllabus unit has its own low-saturation learning colour, not an identical white card.
+private val UnitSurfaces = listOf(
+    Color(0xFFEAF2FF), Color(0xFFE5F7F3), Color(0xFFF2ECFC),
+    Color(0xFFFFF0E1), Color(0xFFE9F3FC), Color(0xFFE8F6EE)
+)
+
 @Composable
 fun HomeScreen(
     content: CourseContent,
@@ -129,6 +135,40 @@ fun HomeScreen(
                 }
             }
         }
+        item(key = "quick-activities-heading") {
+            Column(Modifier.fillMaxWidth().padding(top = 2.dp)) {
+                Text(tr("CHOOSE YOUR NEXT ACTIVITY", "அடுத்த கற்றல் செயல்பாட்டைத் தேர்ந்தெடுக்கவும்"),
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold, color = Color(0xFF49658C))
+                Text(tr("Read, practise or investigate", "படிக்கவும், பயிற்சி செய்யவும், ஆராயவும்"),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+            }
+        }
+        item {
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                StudyAction(
+                    tr("Browse chapters", "பாடங்களைப் பார்"), tr("Read & revise", "படித்து மீள்பார்வை"),
+                    Color(0xFFE5EEFF), Color(0xFF204E9A), onOpenLessons, Modifier.weight(1f)
+                )
+                StudyAction(
+                    tr("Practice MCQs", "வினா பயிற்சி"), tr("Test your learning", "பயிற்சி செய்து பார்"),
+                    Color(0xFFE2F8EE), Color(0xFF146F52), onOpenQuiz, Modifier.weight(1f)
+                )
+            }
+        }
+        item {
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                StudyAction(
+                    tr("Analysis Lab", "பகுப்பாய்வகம்"), tr("18 statistical tools", "18 புள்ளியியல் கருவிகள்"),
+                    Color(0xFFFFEEDD), Color(0xFF9A5423), onOpenLab, Modifier.weight(1f)
+                )
+                StudyAction(
+                    tr("Your pathway", "கற்றல் பாதை"), tr("All six units", "ஆறு அலகுகள்"),
+                    Color(0xFFF0E8FF), Color(0xFF7547AA), onOpenLessons, Modifier.weight(1f)
+                )
+            }
+        }
         item {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween) {
@@ -150,11 +190,12 @@ fun HomeScreen(
             val title = if (ta) localised?.title.orEmpty().ifBlank { unit.title } else unit.title
             val topics = if (ta) localised?.topics.orEmpty().ifEmpty { unit.topics } else unit.topics
             val accent = UnitTones[i % UnitTones.size]
+            val surface = UnitSurfaces[i % UnitSurfaces.size]
             var expanded by rememberSaveable(unit.unit) { mutableStateOf(i + 1 == currentUnit) }
             Card(
                 modifier = Modifier.fillMaxWidth().testTag("home-unit-" + (i + 1)),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                border = BorderStroke(1.dp, Color(0xFFE0E8F4)),
+                colors = CardDefaults.cardColors(containerColor = surface),
+                border = BorderStroke(1.dp, accent.copy(alpha = .20f)),
                 shape = RoundedCornerShape(19.dp),
                 elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
             ) {
@@ -199,7 +240,7 @@ fun HomeScreen(
                                 Row(
                                     Modifier.fillMaxWidth().padding(vertical = 3.dp)
                                         .clip(RoundedCornerShape(12.dp))
-                                        .background(Color(0xFFF2F6FC))
+                                        .background(Color.White.copy(alpha = .80f))
                                         .clickable { onOpenLesson(lesson.id) }
                                         .testTag("home-lesson-" + lesson.id)
                                         .padding(start = 11.dp, top = 10.dp, bottom = 10.dp, end = 4.dp),
@@ -233,30 +274,6 @@ fun HomeScreen(
                         }
                     }
                 }
-            }
-        }
-        item {
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                StudyAction(
-                    tr("Browse chapters", "பாடங்களைப் பார்"), tr("Read & revise", "படித்து மீள்பார்வை"),
-                    Color(0xFFE5EEFF), Color(0xFF204E9A), onOpenLessons, Modifier.weight(1f)
-                )
-                StudyAction(
-                    tr("Practice MCQs", "வினா பயிற்சி"), tr("Test your learning", "பயிற்சி செய்து பார்"),
-                    Color(0xFFE2F8EE), Color(0xFF146F52), onOpenQuiz, Modifier.weight(1f)
-                )
-            }
-        }
-        item {
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                StudyAction(
-                    tr("Analysis Lab", "பகுப்பாய்வகம்"), tr("18 statistical tools", "18 புள்ளியியல் கருவிகள்"),
-                    Color(0xFFFFEEDD), Color(0xFF9A5423), onOpenLab, Modifier.weight(1f)
-                )
-                StudyAction(
-                    tr("Your pathway", "கற்றல் பாதை"), tr("All six units", "ஆறு அலகுகள்"),
-                    Color(0xFFF0E8FF), Color(0xFF7547AA), onOpenLessons, Modifier.weight(1f)
-                )
             }
         }
         item {
