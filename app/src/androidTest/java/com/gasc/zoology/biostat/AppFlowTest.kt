@@ -137,10 +137,24 @@ class AppFlowTest {
 
     private fun courseContent() = kotlinx.coroutines.runBlocking { ContentRepository.load(InstrumentationRegistry.getInstrumentation().targetContext) }
 
+    /** Compose test-harness flake ("multithreaded access to SnapshotStateObserver") seen on CI emulators; retried, anything else still fails. */
+    private fun retryOnComposeThreadFlake(times: Int = 3, block: () -> Unit) {
+        var last: IllegalArgumentException? = null
+        repeat(times) {
+            try { block(); return } catch (e: IllegalArgumentException) {
+                if (e.message?.contains("multithreaded access") != true) throw e
+                last = e; rule.waitForIdle()
+                if (rule.onAllNodesWithTag("bookmark").fetchSemanticsNodes().isNotEmpty()) back()
+            }
+        }
+        throw last!!
+    }
+
     private fun openEveryLesson(tamil: Boolean) {
         val c = courseContent()
         tab(if (tamil) "பாடங்கள்" else "Lessons")
         for (l in c.lessons) {
+          retryOnComposeThreadFlake {
             rule.waitUntil(20000) { rule.onAllNodes(hasScrollToNodeAction()).fetchSemanticsNodes().isNotEmpty() }
             rule.onAllNodes(hasScrollToNodeAction())[0].performScrollToNode(hasTestTag("lesson-${l.id}"))
             tag("lesson-${l.id}")
@@ -150,6 +164,7 @@ class AppFlowTest {
             rule.onAllNodes(hasScrollToNodeAction())[0].performScrollToNode(hasTestTag("complete"))
             rule.onNodeWithTag("complete").assertExists()
             back()
+          }
         }
     }
 
