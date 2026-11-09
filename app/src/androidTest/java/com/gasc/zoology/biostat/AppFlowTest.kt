@@ -33,10 +33,17 @@ class AppFlowTest {
     @After fun tearDown() { scenario.close() }
 
     private fun shot(name: String) { device.executeShellCommand("screencap -p /sdcard/Download/qa/$name.png") }
-    private fun waitText(t: String, ms: Long = 20_000) = rule.waitUntil(ms) { rule.onAllNodesWithText(t).fetchSemanticsNodes().isNotEmpty() }
-    private fun waitTag(t: String, ms: Long = 20_000) = rule.waitUntil(ms) { rule.onAllNodesWithTag(t).fetchSemanticsNodes().isNotEmpty() }
+    private fun fail(what: String, e: Throwable): Nothing {
+        shot("FAIL_" + what.filter { it.isLetterOrDigit() }.take(30))
+        val tree = runCatching { rule.onRoot().printToString(maxDepth = 12) }.getOrDefault("(no tree)").take(2500)
+        throw AssertionError("Waiting for $what failed: ${e.message}\n$tree", e)
+    }
+    private fun waitText(t: String, ms: Long = 20_000, substring: Boolean = false) =
+        try { rule.waitUntil(ms) { rule.onAllNodesWithText(t, substring = substring).fetchSemanticsNodes().isNotEmpty() } } catch (e: Throwable) { fail("text '$t'", e) }
+    private fun waitTag(t: String, ms: Long = 20_000) =
+        try { rule.waitUntil(ms) { rule.onAllNodesWithTag(t).fetchSemanticsNodes().isNotEmpty() } } catch (e: Throwable) { fail("tag '$t'", e) }
     private fun tab(label: String) { rule.onNode(hasText(label) and hasClickAction()).performClick(); rule.waitForIdle() }
-    private fun tag(t: String) { waitTag(t); rule.onNodeWithTag(t).performScrollTo().performClick(); rule.waitForIdle() }
+    private fun tag(t: String) { waitTag(t); val n = rule.onNodeWithTag(t); runCatching { n.performScrollTo() }; n.performClick(); rule.waitForIdle() }
     private fun toTamil() { rule.onNodeWithText("தமிழ்").performClick(); waitText("முகப்பு") }
     private fun toEnglish() { rule.onNodeWithText("English").performClick(); waitText("Home") }
     private fun back() { device.pressBack(); rule.waitForIdle() }
@@ -87,6 +94,7 @@ class AppFlowTest {
         tab(if (tamil) "ஆய்வகம்" else "Lab"); tag("hub-tools")
         for (t in TOOLS) {
             tag("tool-${t.id}"); tag("run"); waitTag("result")
+            if (rule.onAllNodesWithTag("error").fetchSemanticsNodes().isNotEmpty()) fail("tool ${t.id} produced an error", AssertionError("error shown"))
             rule.onAllNodesWithTag("error").assertCountEquals(0)
             if (tamil) rule.onAllNodesWithText("Calculate").assertCountEquals(0)
             if (t.id == "ttest" || t.id == "corr") shot((if (tamil) "ta_" else "en_") + t.id)
@@ -102,7 +110,7 @@ class AppFlowTest {
         tab("Lab"); tag("hub-tools"); tag("tool-descriptive")
         rule.onNodeWithTag("in-data").performTextReplacement("1, ?"); tag("run"); waitTag("error")
         rule.onNodeWithTag("error").assertTextContains("Non-numeric", substring = true)
-        toTamil(); waitText("எண் அல்லாத உள்ளீடு", 10_000)
+        toTamil(); waitText("எண் அல்லாத உள்ளீடு", 10_000, substring = true)
     }
 
     @Test fun tamilModeShowsNoEnglishLessonHeadings() {
