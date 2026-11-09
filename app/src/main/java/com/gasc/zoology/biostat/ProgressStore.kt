@@ -78,32 +78,79 @@ class ProgressStore(context: Context) {
         return Json { prettyPrint = true }.encodeToString(JsonElement.serializer(), o)
     }
 
-    /** Validates against the course content, replaces the current state only if the file is well-formed. */
+    /**
+     * Validate a complete native or v3.2 legacy progress export before any mutation.
+     * Legacy files contain completed/bookmarks/known/notes but no answeredRight or quizAttempts.
+     * Reject wrong types and unknown IDs instead of silently converting a damaged backup to empty progress.
+     */
     fun importJson(text: String, content: CourseContent): Result<ImportSummary> = runCatching {
         if (text.length > MAX_IMPORT) throw IllegalArgumentException("too large")
         val root = Json.parseToJsonElement(text).jsonObject
-        fun ids(key: String, valid: (String) -> Boolean) = ((root[key] as? JsonArray) ?: JsonArray(emptyList()))
-            .mapNotNull { (it as? JsonPrimitive)?.takeIf { p -> p.isString }?.content }.filter(valid).distinct()
-        val lessonIds = content.lessons.map { it.id }.toSet(); val cardIds = content.flashcards.map { it.id }.toSet()
-        val qIds = content.questions.map { it.id }.toSet()
-        val newCompleted = ids("completed") { it in lessonIds }; val newBook = ids("bookmarks") { it in lessonIds }
-        val newKnown = ids("known") { it in cardIds }; val newRight = ids("answeredRight") { it in qIds }
-        val newNotes = ((root["notes"] as? JsonObject) ?: JsonObject(emptyMap())).mapNotNull { (k, v) ->
-            val s = (v as? JsonPrimitive)?.takeIf { it.isString }?.content
-            if (k in lessonIds && s != null && s.isNotBlank()) k to s.take(MAX_NOTE) else null }.toMap()
-        val attempts = ((root["quizAttempts"] as? JsonPrimitive)?.intOrNull ?: 0).coerceIn(0, 1_000_000)
-        val tam = ((root["settings"] as? JsonObject)?.get("tamil") as? JsonPrimitive)?.booleanOrNull
-        if (root["completed"] == null && root["notes"] == null && root["known"] == null && root["bookmarks"] == null)
-            throw IllegalArgumentException("not a progress file")
-        completed.clear(); completed.addAll(newCompleted); saveList("completed", completed)
-        bookmarks.clear(); bookmarks.addAll(newBook); saveList("bookmarks", bookmarks)
-        known.clear(); known.addAll(newKnown); saveList("known", known)
-        answeredRight.clear(); answeredRight.addAll(newRight)
-        notes.clear(); notes.putAll(newNotes); saveNotes()
+        val lessonIds = content.lessons.map { it.id }.toSet()
+        val cardIds = content.flashcards.map { it.id }.toSet()
+        val questionIds = content.questions.map { it.id }.toSet()
+
+        fun ids(key: String, valid: Set<String>, required: Boolean = true): List<String> {
+            val raw = root[key]
+            if (raw == null && !required) return emptyList()
+            val items = raw as? JsonArray ?: throw IllegalArgumentException("Invalid or missing $key")
+            return items.map { element ->
+                val value = (element as? JsonPrimitive)?.takeIf { it.isString }?.content
+                    ?: throw IllegalArgumentException("Invalid ID in $key")
+                if (value !in valid) throw IllegalArgumentException("Unknown ID in $key: $value")
+                value
+            }.distinct()
+        }
+
+        // These four keys occur in both the old web export and the native export.
+        // Requiring all four is intentional: a partial/truncated file must not erase the omitted collections.
+        val newCompleted = ids("completed", lessonIds)
+        val newBookmarks = ids("bookmarks", lessonIds)
+        val newKnown = ids("known", cardIds)
+        val notesObj = root["notes"] as? JsonObject
+            ?: throw IllegalArgumentException("Invalid or missing notes")
+        val newNotes = notesObj.map { (key, element) ->
+            if (key !in lessonIds) throw IllegalArgumentException("Unknown lesson in notes: $key")
+            val value = (element as? JsonPrimitive)?.takeIf { it.isString }?.content
+                ?: throw IllegalArgumentException("Invalid note for $key")
+            if (value.length > MAX_NOTE) throw IllegalArgumentException("Note exceeds size limit")
+            key to value
+        }.filter { it.second.isNotBlank() }.toMap()
+
+        // Additional native-only keys are optional for v3.2 legacy interoperability.
+        val newCorrect = ids("answeredRight", questionIds, required = false)
+        val rawAttempts = root["quizAttempts"]
+        val attempts = if (rawAttempts == null) 0 else
+            (rawAttempts as? JsonPrimitive)?.intOrNull
+                ?: throw IllegalArgumentException("Invalid quizAttempts")
+        if (attempts !in 0..1_000_000) throw IllegalArgumentException("quizAttempts out of range")
+        val settings = root["settings"]
+        if (settings != null && settings !is JsonObject) throw IllegalArgumentException("Invalid settings")
+        val lang = (settings as? JsonObject)?.get("tamil")
+        val newTamil = if (lang == null) null else
+            (lang as? JsonPrimitive)?.booleanOrNull
+                ?: throw IllegalArgumentException("Invalid settings.tamil")
+
+        // Persist one fully validated snapshot before changing the in-memory Compose state.
+        val notesJson = JsonObject(newNotes.mapValues { JsonPrimitive(it.value) }).toString()
+        val editor = prefs.edit()
+            .putStringSet("completed", newCompleted.toSet())
+            .putStringSet("bookmarks", newBookmarks.toSet())
+            .putStringSet("known", newKnown.toSet())
+            .putStringSet("right", newCorrect.toSet())
+            .putString("notes", notesJson)
+            .putInt("attempts", attempts)
+        if (newTamil != null) editor.putBoolean("tamil", newTamil)
+        if (!editor.commit()) throw IllegalStateException("Unable to save imported progress")
+
+        completed.clear(); completed.addAll(newCompleted)
+        bookmarks.clear(); bookmarks.addAll(newBookmarks)
+        known.clear(); known.addAll(newKnown)
+        answeredRight.clear(); answeredRight.addAll(newCorrect)
+        notes.clear(); notes.putAll(newNotes)
         quizAttempts = attempts
-        prefs.edit().putStringSet("right", answeredRight.toSet()).putInt("attempts", attempts).apply()
-        if (tam != null && tam != tamil) toggleTamil()
-        ImportSummary(newCompleted.size, newBook.size, newNotes.size, newKnown.size, newRight.size)
+        if (newTamil != null) tamil = newTamil
+        ImportSummary(newCompleted.size, newBookmarks.size, newNotes.size, newKnown.size, newCorrect.size)
     }
 
     companion object { const val MAX_NOTE = 20000; const val MAX_IMPORT = 1_000_000 }
