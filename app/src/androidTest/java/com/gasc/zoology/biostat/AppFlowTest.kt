@@ -120,9 +120,9 @@ class AppFlowTest {
         }
     }
 
-    @Test fun allSeventeenToolsRunInEnglish() = runEveryTool(false)
+    @Test fun allEighteenToolsRunInEnglish() = runEveryTool(false)
 
-    @Test fun allSeventeenToolsRunInTamilWithoutEnglishLabels() { toTamil(); runEveryTool(true) }
+    @Test fun allEighteenToolsRunInTamilWithoutEnglishLabels() { toTamil(); runEveryTool(true) }
 
     @Test fun badInputShowsLocalisedError() {
         tab("Lab"); tag("hub-tools"); tag("tool-descriptive")
