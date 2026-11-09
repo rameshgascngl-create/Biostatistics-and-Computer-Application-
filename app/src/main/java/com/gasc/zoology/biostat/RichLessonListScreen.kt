@@ -100,7 +100,8 @@ fun RichLessonListScreen(
             }
         }
         item(key = "filters") {
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+            LazyRow(modifier = Modifier.fillMaxWidth().testTag("textbook-filter-scroll"),
+                horizontalArrangement = Arrangement.spacedBy(7.dp)) {
                 items((0..6).toList()) { u ->
                     FilterChip(
                         selected = selectedUnit == u,
@@ -108,6 +109,7 @@ fun RichLessonListScreen(
                             selectedUnit = u
                             if (u != 0) collapsed = collapsedUnits.minus(u.toString()).joinToString(",")
                         },
+                        modifier = Modifier.testTag("textbook-filter-" + u),
                         label = { Text(if (u == 0) tr("All units", "அனைத்து அலகுகள்")
                             else tr("Unit " + u, "அலகு " + u)) },
                         colors = FilterChipDefaults.filterChipColors(
