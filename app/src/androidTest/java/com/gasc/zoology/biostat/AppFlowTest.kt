@@ -72,6 +72,7 @@ class AppFlowTest {
     @Test fun lessonCompleteBookmarkAndNote() {
         tab("Lessons"); tag("lesson-U1_T01"); waitText("Learning objectives"); shot("02_lesson")
         tag("bookmark"); rule.onNodeWithText("★ Bookmarked").assertExists()
+        tag("reader-mode-continuous")
         rule.onNode(hasScrollAction()).performScrollToNode(hasTestTag("note"))
         rule.onNodeWithTag("note").performTextInput("my note"); rule.onNodeWithTag("note").assertTextContains("my note")
         rule.onAllNodes(hasScrollToNodeAction())[0].performScrollToNode(hasTestTag("complete"))
@@ -199,7 +200,7 @@ class AppFlowTest {
     }
 
     @Test fun tamilModeShowsNoEnglishLessonHeadings() {
-        toTamil(); tab("பாடங்கள்"); tag("lesson-U1_T01"); waitText("வரையறை")
+        toTamil(); tab("பாடங்கள்"); tag("lesson-U1_T01"); tag("reader-mode-continuous"); waitText("வரையறை")
         rule.onAllNodesWithText("Definition").assertCountEquals(0); rule.onAllNodesWithText("Learning objectives").assertCountEquals(0)
         rule.onAllNodesWithText("Introduction").assertCountEquals(0); shot("07_lesson_tamil")
         back(); tab("வினாடி வினா"); tag("start-quiz"); waitText("வினா 1 / 10")
@@ -236,6 +237,7 @@ class AppFlowTest {
     @Test fun readerSectionsExpandWithoutLeavingThePage() {
         tab("Lessons")
         tag("lesson-U1_T01")
+        tag("reader-mode-continuous")
         rule.onAllNodes(hasScrollToNodeAction())[0]
             .performScrollToNode(hasTestTag("lesson-section-Definition"))
         tag("lesson-section-Definition")
@@ -243,6 +245,37 @@ class AppFlowTest {
         shot("10_reader_section_open")
         tag("lesson-section-Definition")
         rule.onAllNodesWithTag("section-body-Definition").assertCountEquals(0)
+    }
+
+    @Test fun bookPagesTurnAndReturnWithoutLosingChapterContent() {
+        tab("Lessons")
+        tag("lesson-U1_T01")
+        waitTag("reader-page-number")
+        waitTag("section-body-Learning objectives")
+        shot("12_book_page_one")
+        tag("reader-next-page")
+        waitTag("section-body-Introduction")
+        shot("13_book_page_two")
+        tag("reader-previous-page")
+        waitTag("section-body-Learning objectives")
+        rule.onNodeWithTag("reader-contents").assertExists()
+        tag("reader-mode-continuous")
+        rule.onAllNodes(hasScrollToNodeAction())[0]
+            .performScrollToNode(hasTestTag("lesson-section-Definition"))
+        tag("lesson-section-Definition")
+        waitTag("section-body-Definition")
+    }
+
+    @Test fun tamilBookPagesDisplayTamilSectionAndNavigation() {
+        toTamil()
+        tab("பாடங்கள்")
+        tag("lesson-U1_T01")
+        waitTag("reader-page-number")
+        waitTag("section-body-மேலோட்டம்")
+        tag("reader-next-page")
+        waitTag("section-body-வரையறை")
+        rule.onAllNodesWithText("Introduction").assertCountEquals(0)
+        shot("14_book_page_tamil")
     }
 
     private fun courseContent() = kotlinx.coroutines.runBlocking { ContentRepository.load(InstrumentationRegistry.getInstrumentation().targetContext) }
@@ -270,6 +303,7 @@ class AppFlowTest {
             rule.onAllNodes(hasScrollToNodeAction())[0].performScrollToNode(hasTestTag("lesson-${l.id}"))
             tag("lesson-${l.id}")
             waitTag("bookmark")
+            tag("reader-mode-continuous")
             val title = if (tamil) c.tamilLessons.getValue(l.id).title else l.title
             rule.onAllNodesWithText(title).assertCountEquals(1)
             rule.onAllNodes(hasScrollToNodeAction())[0].performScrollToNode(hasTestTag("complete"))
