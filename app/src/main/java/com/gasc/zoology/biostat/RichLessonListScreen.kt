@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
@@ -56,29 +57,51 @@ fun RichLessonListScreen(
     ) {
         item(key = "textbook-header") {
             Card(
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFE3EDFF)),
-                shape = RoundedCornerShape(19.dp)
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF1B497B)),
+                shape = RoundedCornerShape(22.dp)
             ) {
-                Column(Modifier.fillMaxWidth().padding(16.dp)) {
-                    Text(tr("Your interactive textbook", "உங்கள் கற்றல் நூல்"),
-                        style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold,
-                        color = Color(0xFF153F85))
-                    Text(tr("Explore chapters inside each unit. Bookmark or track progress as you learn.",
-                        "ஒவ்வோர் அலகிலும் பாடங்களை விரித்துப் படித்து முன்னேற்றத்தைப் பதிவு செய்யலாம்."),
-                        style = MaterialTheme.typography.bodyMedium, color = Color(0xFF385B8B))
+                Column(Modifier.fillMaxWidth().background(
+                    Brush.linearGradient(listOf(Color(0xFF12365F), Color(0xFF265E9D), Color(0xFF078482)))
+                ).padding(20.dp)) {
+                    Text(tr("BIOSTATISTICS • VOLUME I", "உயிரிப் புள்ளியியல் • தொகுதி 1"),
+                        style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold,
+                        color = Color(0xFFC9F5ED))
+                    Spacer(Modifier.height(7.dp))
+                    Text(tr("Table of contents", "பொருளடக்கம்"),
+                        style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold,
+                        color = Color.White)
+                    Spacer(Modifier.height(6.dp))
+                    Text(tr("${content.lessons.size} chapters • 6 units • bilingual textbook",
+                        "${content.lessons.size} பாடங்கள் • 6 அலகுகள் • இருமொழிப் பாடநூல்"),
+                        style = MaterialTheme.typography.bodyMedium, color = Color(0xFFE3F0FE))
+                    Spacer(Modifier.height(7.dp))
+                    Text(tr("Open any unit, choose a chapter and turn the pages.",
+                        "அலகைத் திறந்து, பாடத்தைத் தேர்ந்தெடுத்து, பக்கங்களைப் புரட்டிப் படிக்கலாம்."),
+                        style = MaterialTheme.typography.bodySmall, color = Color(0xFFE0E9F6))
                     Spacer(Modifier.height(12.dp))
                     OutlinedTextField(
                         value = query, onValueChange = { query = it },
                         singleLine = true,
                         shape = RoundedCornerShape(13.dp),
                         modifier = Modifier.fillMaxWidth().testTag("lesson-search"),
-                        label = { Text(tr("Search lessons", "பாடங்களைத் தேடு")) }
+                        label = { Text(tr("Search chapters", "பாடங்களைத் தேடு")) },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = Color.White,
+                            unfocusedContainerColor = Color.White,
+                            focusedTextColor = Color(0xFF1A3152),
+                            unfocusedTextColor = Color(0xFF1A3152),
+                            focusedLabelColor = Color(0xFF315C89),
+                            unfocusedLabelColor = Color(0xFF315C89),
+                            focusedBorderColor = Color(0xFFCCE5F6),
+                            unfocusedBorderColor = Color(0xFFB9D8E4)
+                        )
                     )
                 }
             }
         }
         item(key = "filters") {
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+            LazyRow(modifier = Modifier.fillMaxWidth().testTag("textbook-filter-scroll"),
+                horizontalArrangement = Arrangement.spacedBy(7.dp)) {
                 items((0..6).toList()) { u ->
                     FilterChip(
                         selected = selectedUnit == u,
@@ -86,6 +109,7 @@ fun RichLessonListScreen(
                             selectedUnit = u
                             if (u != 0) collapsed = collapsedUnits.minus(u.toString()).joinToString(",")
                         },
+                        modifier = Modifier.testTag("textbook-filter-" + u),
                         label = { Text(if (u == 0) tr("All units", "அனைத்து அலகுகள்")
                             else tr("Unit " + u, "அலகு " + u)) },
                         colors = FilterChipDefaults.filterChipColors(
@@ -131,8 +155,12 @@ fun RichLessonListScreen(
                 }
                 Card(
                     shape = RoundedCornerShape(15.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    border = BorderStroke(1.dp, Color(0xFFDCE6F4)),
+                    colors = CardDefaults.cardColors(containerColor = when (u) {
+                        1 -> Color(0xFFEAF2FF); 2 -> Color(0xFFE5F6F1)
+                        3 -> Color(0xFFF3ECFB); 4 -> Color(0xFFFFF0DF)
+                        5 -> Color(0xFFEAF3FC); else -> Color(0xFFE7F5EB)
+                    }),
+                    border = BorderStroke(1.dp, accent.copy(alpha = .25f)),
                     modifier = Modifier.fillMaxWidth()
                         .clickable {
                             collapsed = if (u.toString() in collapsedUnits)
@@ -191,7 +219,7 @@ private fun RichLessonRow(
             .clickable(onClick = onOpen).testTag("lesson-" + lesson.id),
         shape = RoundedCornerShape(14.dp),
         border = BorderStroke(1.dp, if (done) Color(0xFFBCE8D7) else Color(0xFFE1E8F4)),
-        colors = CardDefaults.cardColors(containerColor = if (done) Color(0xFFF2FBF7) else Color.White)
+        colors = CardDefaults.cardColors(containerColor = if (done) Color(0xFFEAF8F0) else Color(0xFFFFFCF6))
     ) {
         Column(Modifier.fillMaxWidth().padding(start = 14.dp, top = 10.dp, end = 9.dp, bottom = 9.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -207,9 +235,15 @@ private fun RichLessonRow(
                     }
                 }
                 Spacer(Modifier.width(9.dp))
-                Text(title, modifier = Modifier.weight(1f),
+                Column(Modifier.weight(1f)) {
+                    val chapterNumber = content.lessons.indexOfFirst { it.id == lesson.id } + 1
+                    Text(tr("CHAPTER $chapterNumber", "பாடம் $chapterNumber"),
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold, color = Color(0xFF426D97))
+                    Text(title,
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
+                }
                 IconButton(
                     onClick = { store.toggleBookmark(lesson.id) },
                     modifier = Modifier.size(42.dp).testTag("list-bookmark-" + lesson.id)

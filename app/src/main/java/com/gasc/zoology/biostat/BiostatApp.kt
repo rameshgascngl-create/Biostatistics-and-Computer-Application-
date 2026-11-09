@@ -122,7 +122,7 @@ fun BiostatApp(content: CourseContent, store: ProgressStore) {
                 val lesson = content.lesson(id)
                 if (lesson != null) {
                     LessonScreen(content, lesson, store, onOpen = { nav.navigate("lesson/$it") {
-                        popUpTo("lessons") } })
+                        popUpTo("lessons") } }, onOpenContents = { nav.navigate("lessons") })
                 }
             }
             composable("quiz") { QuizScreen(content, store) }
