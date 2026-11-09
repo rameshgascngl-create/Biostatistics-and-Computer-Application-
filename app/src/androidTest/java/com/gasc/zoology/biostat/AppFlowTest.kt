@@ -12,6 +12,7 @@ import androidx.test.uiautomator.UiDevice
 import com.gasc.zoology.biostat.lab.TOOLS
 import org.junit.After
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -104,6 +105,59 @@ class AppFlowTest {
 
     @Test fun progressBackupScreenOffersExportImportReset() {
         tab("Lab"); tag("hub-progress"); waitTag("export"); rule.onNodeWithTag("import").assertExists(); rule.onNodeWithTag("reset").assertExists()
+    }
+
+
+    @Test fun malformedProgressImportPreservesSavedRecordsAndLegacyRoundTrip() {
+        val ctx = ApplicationProvider.getApplicationContext<Context>()
+        val c = courseContent()
+        val id = c.lessons.first().id
+        val card = c.flashcards.first().id
+        val qid = c.questions.first().id
+        val progress = ProgressStore(ctx)
+        progress.toggleLesson(id)
+        progress.toggleBookmark(id)
+        progress.toggleKnown(card)
+        progress.setNote(id, "குறிப்புகள் — sample note")
+        progress.recordAnswer(qid, true)
+        val expectedCompleted = progress.completed.toSet()
+        val expectedBookmarks = progress.bookmarks.toSet()
+        val expectedKnown = progress.known.toSet()
+        val expectedNotes = progress.notes.toMap()
+        val expectedRight = progress.answeredRight.toSet()
+        val expectedAttempts = progress.quizAttempts
+        val malformed = listOf(
+            """{"completed":{}}""",
+            """{"completed":[],"bookmarks":[],"known":[]}""",
+            """{"completed":["INVALID"],"bookmarks":[],"known":[],"notes":{}}""",
+            """{"completed":[],"bookmarks":[],"known":[],"notes":{"$id":3}}""",
+            """{"completed":[],"bookmarks":[],"known":[],"notes":{},"answeredRight":[true]}""",
+            """{"completed":[],"bookmarks":[],"known":[],"notes":{},"quizAttempts":"four"}"""
+        )
+        malformed.forEachIndexed { index, json ->
+            assertTrue("malformed file $index accepted", progress.importJson(json, c).isFailure)
+            assertEquals(expectedCompleted, progress.completed.toSet())
+            assertEquals(expectedBookmarks, progress.bookmarks.toSet())
+            assertEquals(expectedKnown, progress.known.toSet())
+            assertEquals(expectedNotes, progress.notes.toMap())
+            assertEquals(expectedRight, progress.answeredRight.toSet())
+            assertEquals(expectedAttempts, progress.quizAttempts)
+        }
+        // Legacy v3.2 does not have the native-only answeredRight or quizAttempts fields.
+        val legacy = """{"completed":["$id"],"bookmarks":["$id"],"known":["$card"],"notes":{"$id":"தமிழ் குறிப்பு"},"settings":{"tamil":true}}"""
+        assertTrue(progress.importJson(legacy, c).isSuccess)
+        assertEquals("தமிழ் குறிப்பு", progress.notes[id])
+        assertTrue(progress.tamil)
+        val exported = progress.exportJson()
+        progress.reset()
+        assertTrue(progress.importJson(exported, c).isSuccess)
+        assertEquals("தமிழ் குறிப்பு", progress.notes[id])
+        val reopened = ProgressStore(ctx)
+        assertEquals(progress.completed.toSet(), reopened.completed.toSet())
+        assertEquals(progress.bookmarks.toSet(), reopened.bookmarks.toSet())
+        assertEquals(progress.known.toSet(), reopened.known.toSet())
+        assertEquals(progress.notes.toMap(), reopened.notes.toMap())
+        assertTrue(reopened.tamil)
     }
 
     private fun runEveryTool(tamil: Boolean) {
