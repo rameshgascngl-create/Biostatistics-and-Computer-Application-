@@ -3,6 +3,8 @@ package com.gasc.zoology.biostat
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 
 /**
  * One academic section per book page. The same page definitions render both
