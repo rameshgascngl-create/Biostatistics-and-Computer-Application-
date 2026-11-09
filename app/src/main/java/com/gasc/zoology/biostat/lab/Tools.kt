@@ -192,6 +192,35 @@ val TOOLS: List<ToolDef> = listOf(
         Out(met, notes, listOf((if (ta) "ANOVA அட்டவணை" else "ANOVA table") to tb, (if (ta) "குழுச் சுருக்கம்" else "Group summary") to gt))
     },
 
+    ToolDef("welchanova", "Welch one-way ANOVA", "வெல்ச் ஒரு வழி ANOVA",
+        "Compare means of three or more independent groups when variances differ, with Welch-adjusted F and degrees of freedom.",
+        "மாறுபாடுகள் சமமற்ற மூன்று அல்லது அதற்கு மேற்பட்ட சார்பற்ற குழுக்களின் சராசரிகளை வெல்ச் முறையில் ஒப்பிடுதல்.",
+        listOf(Input("g", "Groups (separate groups with ;)", "குழுக்கள் (குழுக்களை ; கொண்டு பிரிக்கவும்)",
+            "12, 15, 14, 11, 13; 14, 17, 15, 13, 16, 15; 16, 19, 15, 17, 18"))
+    ) { m, ta ->
+        val groups = Parse.groups(m["g"].orEmpty(), 3, 2)
+        val r = welchAnova(groups)
+        val metrics = listOf("F" to fmt(r.f),
+            (if (ta) "தொகுதி சுதந்திர அளவு" else "Numerator df") to r.df1.toString(),
+            (if (ta) "திருத்திய சுதந்திர அளவு" else "Welch denominator df") to fmt(r.df2, 6),
+            "p" to pFmt(r.p))
+        val table = Table(listOf(if (ta) "குழு" else "Group", "n",
+                if (ta) "சராசரி" else "Mean", if (ta) "மாறுபாடு" else "Variance"),
+            r.means.indices.map { i ->
+                listOf((i + 1).toString(), r.ns[i].toString(), fmt(r.means[i]), fmt(r.variances[i]))
+            })
+        val notes = listOf(decision(r.p, ta),
+            if (ta)
+                "அனுமானங்கள்: சார்பற்ற கண்டறிதல்கள்; ஒவ்வொரு குழுவிலும் தோராயமாக இயல்பான தரவு. குழு மாறுபாடுகள் சமமாக இருக்க வேண்டியதில்லை. குழுச் சராசரி வேறுபாட்டைச் சோதிக்கிறது; நடுக்கோடிகளை அல்ல."
+            else
+                "Assumptions: independent observations and approximately normal data within each group. Equal variances are not required. This tests group means, not medians.",
+            if (ta)
+                "குறிப்பிடத்தக்க முடிவுக்குப் பின் இருகுழு ஒப்பீட்டிற்கு கேம்ஸ்–ஹோவெல் முறை பொருத்தமானது; இச்செயலியில் அது இன்னும் வழங்கப்படவில்லை. சாதாரண டூக்கி சோதனையைத் தானாகப் பயன்படுத்த வேண்டாம்."
+            else
+                "For post-hoc pairwise comparisons use a validated Games–Howell implementation (not yet included here). Do not automatically apply ordinary Tukey HSD after Welch ANOVA.")
+        Out(metrics, notes, listOf((if (ta) "குழுச் சுருக்கம்" else "Group summary") to table))
+    },
+
     ToolDef("tukey", "Tukey HSD post-hoc test", "டூக்கி HSD பிந்தைய சோதனை",
         "All pairwise comparisons after ANOVA using the studentized range distribution.",
         "ANOVA-விற்குப் பின் ஸ்டூடண்டைஸ்டு வீச்சுப் பரவலைப் பயன்படுத்தி அனைத்து இணை ஒப்பீடுகள்.",
