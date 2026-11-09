@@ -58,6 +58,16 @@ class LabToolsTest {
         }
     }
 
+    @Test fun allTiedMannWhitneyIsNotReportedAsNonsignificant() {
+        val t = TOOLS.first { it.id == "mw" }
+        val inputs = t.defaults() + mapOf("a" to "1, 1, 1", "b" to "1, 1, 1")
+        val exception = runCatching { t.run(inputs, false) }.exceptionOrNull()
+        assertTrue(exception is StatException)
+        assertEquals("allIdentical", (exception as StatException).code)
+        val tamilMessage = errorText(exception, true)
+        assertTrue(tamilMessage.contains("வரையறுக்க"))
+    }
+
     @Test fun datasetsAnalyseInBothLanguages() {
         assertEquals(13, DATASETS.size)
         for (d in DATASETS) for (ta in listOf(false, true)) {
