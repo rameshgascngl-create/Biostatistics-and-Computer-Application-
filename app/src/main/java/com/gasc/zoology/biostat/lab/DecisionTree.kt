@@ -25,48 +25,48 @@ import com.gasc.zoology.biostat.SectionCard
 import com.gasc.zoology.biostat.tr
 
 sealed interface TreeNode
-data class Question(val en: String, val ta: String, val choices: List<Choice>) : TreeNode
+data class TreeQuestion(val en: String, val ta: String, val choices: List<Choice>) : TreeNode
 data class Choice(val en: String, val ta: String, val next: String)
 data class Leaf(val titleEn: String, val titleTa: String, val whyEn: String, val whyTa: String,
                 val checkEn: String, val checkTa: String, val tools: List<String>) : TreeNode
 
 val TREE: Map<String, TreeNode> = mapOf(
-    "start" to Question("What do you want to do?", "நீங்கள் என்ன செய்ய விரும்புகிறீர்கள்?", listOf(
+    "start" to TreeQuestion("What do you want to do?", "நீங்கள் என்ன செய்ய விரும்புகிறீர்கள்?", listOf(
         Choice("Describe or check one set of measurements", "ஒரு தொகுதி அளவீடுகளை விவரிக்க அல்லது சரிபார்க்க", "describe"),
         Choice("Compare groups or conditions", "குழுக்களை அல்லது நிலைமைகளை ஒப்பிட", "compare"),
         Choice("Study the relationship between two variables", "இரு மாறிகளுக்கு இடையிலான தொடர்பை ஆய்வு செய்ய", "assoc"),
         Choice("Analyse counts in categories", "வகைகளிலுள்ள எண்ணிக்கைகளைப் பகுப்பாய்வு செய்ய", "cat"),
         Choice("Plan a study (sample size or power)", "ஆய்வைத் திட்டமிட (மாதிரி அளவு / ஆற்றல்)", "plan"))),
-    "describe" to Question("What do you need?", "உங்களுக்கு என்ன தேவை?", listOf(
+    "describe" to TreeQuestion("What do you need?", "உங்களுக்கு என்ன தேவை?", listOf(
         Choice("Summary measures and a histogram", "சுருக்க அளவைகளும் அலைவெண் வரைபடமும்", "L_desc"),
         Choice("A confidence interval for the mean", "சராசரிக்கான நம்பக இடைவெளி", "L_ci"),
         Choice("Is the data approximately normal?", "தரவு தோராயமாக இயல்புப் பரவலில் உள்ளதா?", "L_qq"),
         Choice("Position of one value in a normal distribution", "இயல்புப் பரவலில் ஒரு மதிப்பின் நிலை", "L_z"))),
-    "compare" to Question("How many groups or samples are compared?", "எத்தனை குழுக்கள்/மாதிரிகள் ஒப்பிடப்படுகின்றன?", listOf(
+    "compare" to TreeQuestion("How many groups or samples are compared?", "எத்தனை குழுக்கள்/மாதிரிகள் ஒப்பிடப்படுகின்றன?", listOf(
         Choice("One sample against a reference value", "ஒரு மாதிரி — ஒரு குறிப்பு மதிப்புடன்", "one_norm"),
         Choice("Two groups of different subjects (independent)", "வெவ்வேறு உயிரிகளின் இரு குழுக்கள் (சார்பற்றவை)", "two_norm"),
         Choice("Two measurements on the same subjects (paired)", "ஒரே உயிரிகளில் இரு அளவீடுகள் (இணை)", "pair_norm"),
         Choice("Three or more independent groups", "மூன்று அல்லது அதற்கு மேற்பட்ட சார்பற்ற குழுக்கள்", "multi_norm"))),
-    "one_norm" to Question("Is the data approximately normal (or n large)?", "தரவு தோராயமாக இயல்பானதா (அல்லது n பெரிதா)?", listOf(
+    "one_norm" to TreeQuestion("Is the data approximately normal (or n large)?", "தரவு தோராயமாக இயல்பானதா (அல்லது n பெரிதா)?", listOf(
         Choice("Yes", "ஆம்", "L_t1"), Choice("No / strongly skewed", "இல்லை / மிகுந்த கோட்டம்", "L_wil1"))),
-    "two_norm" to Question("Is each group approximately normal (or n large)?", "ஒவ்வொரு குழுவும் தோராயமாக இயல்பானதா (அல்லது n பெரிதா)?", listOf(
+    "two_norm" to TreeQuestion("Is each group approximately normal (or n large)?", "ஒவ்வொரு குழுவும் தோராயமாக இயல்பானதா (அல்லது n பெரிதா)?", listOf(
         Choice("Yes", "ஆம்", "L_welch"), Choice("No / ordinal / strongly skewed", "இல்லை / வரிசைத் தரவு / மிகுந்த கோட்டம்", "L_mw"))),
-    "pair_norm" to Question("Are the paired differences approximately normal?", "இணை வேறுபாடுகள் தோராயமாக இயல்பானவையா?", listOf(
+    "pair_norm" to TreeQuestion("Are the paired differences approximately normal?", "இணை வேறுபாடுகள் தோராயமாக இயல்பானவையா?", listOf(
         Choice("Yes", "ஆம்", "L_paired"), Choice("No / ordinal", "இல்லை / வரிசைத் தரவு", "L_wil"))),
-    "multi_norm" to Question("Is each group approximately normal with similar spread?", "ஒவ்வொரு குழுவும் தோராயமாக இயல்பாகவும் ஒத்த பரவலுடனும் உள்ளதா?", listOf(
+    "multi_norm" to TreeQuestion("Is each group approximately normal with similar spread?", "ஒவ்வொரு குழுவும் தோராயமாக இயல்பாகவும் ஒத்த பரவலுடனும் உள்ளதா?", listOf(
         Choice("Yes", "ஆம்", "L_anova"), Choice("No / ordinal / unequal spread", "இல்லை / வரிசைத் தரவு / சமமற்ற பரவல்", "L_kw"))),
-    "assoc" to Question("What kind of relationship?", "எந்த வகைத் தொடர்பு?", listOf(
+    "assoc" to TreeQuestion("What kind of relationship?", "எந்த வகைத் தொடர்பு?", listOf(
         Choice("Two numerical variables", "இரு எண் மாறிகள்", "L_corr"))),
-    "cat" to Question("What is the design?", "ஆய்வு வடிவமைப்பு என்ன?", listOf(
+    "cat" to TreeQuestion("What is the design?", "ஆய்வு வடிவமைப்பு என்ன?", listOf(
         Choice("One categorical variable against expected proportions", "எதிர்பார்க்கும் விகிதங்களுடன் ஒரு வகை மாறி", "cat1"),
         Choice("Two categorical variables (contingency table)", "இரு வகை மாறிகள் (இணைப்பு அட்டவணை)", "cat2"))),
-    "cat1" to Question("Are the expected proportions from genetic theory?", "எதிர்பார்க்கும் விகிதங்கள் மரபியல் கோட்பாட்டிலிருந்து வருகின்றனவா?", listOf(
+    "cat1" to TreeQuestion("Are the expected proportions from genetic theory?", "எதிர்பார்க்கும் விகிதங்கள் மரபியல் கோட்பாட்டிலிருந்து வருகின்றனவா?", listOf(
         Choice("Hardy–Weinberg genotype proportions", "ஹார்டி–வெயின்பர்க் மரபணுவகை விகிதங்கள்", "L_hw"),
         Choice("Any other expected proportions (e.g. Mendelian ratios)", "பிற எதிர்பார்க்கும் விகிதங்கள் (உம்: மெண்டலிய விகிதங்கள்)", "L_gof"))),
-    "cat2" to Question("Do you need risk and odds ratios?", "இடர் விகிதமும் முரண்பாட்டு விகிதமும் தேவையா?", listOf(
+    "cat2" to TreeQuestion("Do you need risk and odds ratios?", "இடர் விகிதமும் முரண்பாட்டு விகிதமும் தேவையா?", listOf(
         Choice("Yes — exposure and outcome (2×2)", "ஆம் — வெளிப்பாடும் விளைவும் (2×2)", "L_epi"),
         Choice("No — only test for association", "இல்லை — தொடர்பைச் சோதித்தால் போதும்", "L_chi"))),
-    "plan" to Question("What do you need to plan?", "எதைத் திட்டமிட வேண்டும்?", listOf(
+    "plan" to TreeQuestion("What do you need to plan?", "எதைத் திட்டமிட வேண்டும்?", listOf(
         Choice("Sample size for a given margin of error", "குறிப்பிட்ட பிழை எல்லைக்கான மாதிரி அளவு", "L_ss"),
         Choice("Power of a t-test for a given n", "கொடுக்கப்பட்ட n-க்கான t-சோதனையின் ஆற்றல்", "L_pw"))),
 
@@ -99,7 +99,7 @@ fun DecisionTreeScreen(onOpenTool: (String) -> Unit) {
     Column(Modifier.verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text(tr("Which test should I use?", "எந்தச் சோதனையைப் பயன்படுத்த வேண்டும்?"), style = MaterialTheme.typography.titleLarge)
         when (node) {
-            is Question -> {
+            is TreeQuestion -> {
                 Text(if (ta) node.ta else node.en, style = MaterialTheme.typography.titleMedium)
                 node.choices.forEachIndexed { i, c ->
                     Button(onClick = { path = path + c.next }, modifier = Modifier.fillMaxWidth().testTag("choice-$i")) { Text(if (ta) c.ta else c.en) }

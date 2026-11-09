@@ -72,7 +72,7 @@ class LabToolsTest {
         while (stack.isNotEmpty()) {
             val id = stack.removeFirst(); if (!reachable.add(id)) continue
             when (val n = TREE[id] ?: error("dangling node $id")) {
-                is Question -> n.choices.forEach { stack.add(it.next) }
+                is TreeQuestion -> n.choices.forEach { stack.add(it.next) }
                 is Leaf -> n.tools.forEach { t -> assertTrue("unknown tool $t", TOOLS.any { it.id == t }) }
             }
         }
