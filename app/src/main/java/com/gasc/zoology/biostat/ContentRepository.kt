@@ -8,7 +8,7 @@ import kotlinx.serialization.builtins.MapSerializer
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
 
-/** Loads the course content bundled in assets/content/*.json. */
+/** Loads the course content JSON files bundled in the assets content folder. */
 object ContentRepository {
     private val json = Json { ignoreUnknownKeys = true }
 
