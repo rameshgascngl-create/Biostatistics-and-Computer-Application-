@@ -35,7 +35,9 @@ class AppFlowTest {
     private fun shot(name: String) { device.executeShellCommand("screencap -p /sdcard/Download/qa/$name.png") }
     private fun fail(what: String, e: Throwable): Nothing {
         shot("FAIL_" + what.filter { it.isLetterOrDigit() }.take(30))
-        val tree = runCatching { rule.onRoot().printToString(maxDepth = 12) }.getOrDefault("(no tree)").take(2500)
+        val pkg = runCatching { device.currentPackageName }.getOrDefault("?")
+        val dump = runCatching { java.io.ByteArrayOutputStream().also { device.dumpWindowHierarchy(it) }.toString().replace(Regex("<node[^>]*text=\"([^\"]*)\"[^>]*>"), "[$1]").replace(Regex("<[^>]*>"), "").take(1200) }.getOrDefault("?")
+        val tree = "package=$pkg roots=${runCatching { rule.onAllNodes(isRoot()).fetchSemanticsNodes().size }.getOrDefault(-1)} dump=$dump"
         throw AssertionError("Waiting for $what failed: ${e.message}\n$tree", e)
     }
     private fun waitText(t: String, ms: Long = 20_000, substring: Boolean = false) =
