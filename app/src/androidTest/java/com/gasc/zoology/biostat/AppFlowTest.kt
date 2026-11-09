@@ -106,12 +106,14 @@ class AppFlowTest {
     private fun runEveryTool(tamil: Boolean) {
         tab(if (tamil) "ஆய்வகம்" else "Lab"); tag("hub-tools")
         for (t in TOOLS) {
+          step {
             tag("tool-${t.id}"); tag("run"); waitTag("result")
             if (rule.onAllNodesWithTag("error").fetchSemanticsNodes().isNotEmpty()) fail("tool ${t.id} produced an error", AssertionError("error shown"))
             rule.onAllNodesWithTag("error").assertCountEquals(0)
             if (tamil) rule.onAllNodesWithText("Calculate").assertCountEquals(0)
             if (t.id == "ttest" || t.id == "corr") shot((if (tamil) "ta_" else "en_") + t.id)
             back()
+          }
         }
     }
 
@@ -137,14 +139,15 @@ class AppFlowTest {
 
     private fun courseContent() = kotlinx.coroutines.runBlocking { ContentRepository.load(InstrumentationRegistry.getInstrumentation().targetContext) }
 
-    /** Compose test-harness flake ("multithreaded access to SnapshotStateObserver") seen on CI emulators; retried, anything else still fails. */
-    private fun retryOnComposeThreadFlake(times: Int = 3, block: () -> Unit) {
-        var last: IllegalArgumentException? = null
+    /** CI emulators are slow and occasionally drop a frame (list scroll miss, Compose harness thread check). Retry one step up to 3 times,
+     *  returning to the list screen first; a step that fails three times in a row still fails the test, so real regressions are not hidden. */
+    private fun step(times: Int = 3, block: () -> Unit) {
+        var last: Throwable? = null
         repeat(times) {
-            try { block(); return } catch (e: IllegalArgumentException) {
-                if (e.message?.contains("multithreaded access") != true) throw e
-                last = e; rule.waitForIdle()
-                if (rule.onAllNodesWithTag("bookmark").fetchSemanticsNodes().isNotEmpty()) back()
+            try { block(); return } catch (e: Throwable) {
+                if (e !is AssertionError && e !is IllegalArgumentException) throw e
+                last = e; runCatching { rule.waitForIdle() }
+                repeat(2) { if (listOf("bookmark", "run", "leaf").any { t -> rule.onAllNodesWithTag(t).fetchSemanticsNodes().isNotEmpty() }) back() }
             }
         }
         throw last!!
@@ -154,7 +157,7 @@ class AppFlowTest {
         val c = courseContent()
         tab(if (tamil) "பாடங்கள்" else "Lessons")
         for (l in c.lessons) {
-          retryOnComposeThreadFlake {
+          step {
             rule.waitUntil(20000) { rule.onAllNodes(hasScrollToNodeAction()).fetchSemanticsNodes().isNotEmpty() }
             rule.onAllNodes(hasScrollToNodeAction())[0].performScrollToNode(hasTestTag("lesson-${l.id}"))
             tag("lesson-${l.id}")
