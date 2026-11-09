@@ -1360,26 +1360,37 @@ init = function(){ origInit(); setTimeout(showContinueCard, 100); };
 </script>
 
 <script>
-let quizSession={qs:[],idx:0,answers:{}};
+let quizSession={qs:[],idx:0,answers:{},picked:{},revealed:{}};
+function _qEsc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function startQuizSession(n){
   n=n||10;
   let pool=QUESTIONS.slice();
   for(let i=pool.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]]}
-  quizSession={qs:pool.slice(0,Math.min(n,pool.length)),idx:0,answers:{}};
+  quizSession={qs:pool.slice(0,Math.min(n,pool.length)),idx:0,answers:{},picked:{},revealed:{}};
   showQuizQuestion();
 }
 function showQuizQuestion(){
   let box=document.getElementById('quizSingle');
   if(!box)return;
   let s=quizSession,q=s.qs[s.idx];
-  if(!q){box.innerHTML='<p>Session complete. Score: '+Object.values(s.answers).filter(a=>a).length+'/'+s.qs.length+'</p><button onclick="startQuizSession(10)">New session</button>';return}
-  let pct=Math.round((s.idx/s.qs.length)*100);
-  let opts=q.options.map((o,i)=>'<label style="display:block;padding:8px"><input type="radio" name="qa" value="'+i+'"> '+o+'</label>').join('');
-  box.innerHTML='<div class="q-single"><div class="q-progress"><div class="q-bar" style="width:'+pct+'%"></div></div><p><strong>'+(s.idx+1)+' / '+s.qs.length+'</strong></p><p>'+q.q+'</p>'+opts+'<div class="q-nav"><button onclick="quizPrev()" '+(s.idx===0?'disabled':'')+'>Previous</button><button onclick="quizNext()">Next</button></div></div>';
+  if(!q){
+    let score=Object.values(s.answers).filter(a=>a).length;
+    box.innerHTML='<div class="q-single" role="status"><p><strong>Session complete.</strong> Score: '+score+' / '+s.qs.length+'</p><button type="button" class="btn" onclick="startQuizSession(10)">New session</button></div>';return}
+  let pct=Math.round((s.idx/s.qs.length)*100),done=!!s.revealed[s.idx],pk=s.picked[s.idx];
+  let opts=q.o.map((o,i)=>{
+    let mark='';if(done){if(i===q.a)mark=' ✔';else if(i===pk)mark=' ✘'}
+    return '<label style="display:block;padding:8px"><input type="radio" name="qa" value="'+i+'"'+(pk===i?' checked':'')+(done?' disabled':'')+'> '+_qEsc(o)+mark+'</label>'}).join('');
+  let fb=done?'<div class="note" role="status"><strong>'+(pk===q.a?'Correct.':'Not quite — correct answer: '+_qEsc(q.o[q.a])+'.')+'</strong> '+_qEsc(q.e||'')+'</div>':'';
+  box.innerHTML='<div class="q-single"><div class="q-progress"><div class="q-bar" style="width:'+pct+'%"></div></div><p><strong>'+(s.idx+1)+' / '+s.qs.length+'</strong></p><p>'+_qEsc(q.q)+'</p><fieldset style="border:0;padding:0;margin:0">'+opts+'</fieldset>'+fb+'<div class="q-nav"><button type="button" class="btn secondary" onclick="quizPrev()" '+(s.idx===0?'disabled':'')+'>Previous</button> '+(done?'':'<button type="button" class="btn" onclick="quizCheck()">Check answer</button> ')+'<button type="button" class="btn" onclick="quizNext()">'+(s.idx===s.qs.length-1?'Finish':'Next')+'</button></div></div>';
+}
+function quizCheck(){
+  let sel=document.querySelector('input[name=qa]:checked');
+  if(!sel){if(typeof toast==='function')toast('Choose an option first');return}
+  let i=quizSession.idx,v=Number(sel.value);quizSession.picked[i]=v;quizSession.answers[i]=(v===quizSession.qs[i].a);quizSession.revealed[i]=true;showQuizQuestion();
 }
 function quizNext(){
   let sel=document.querySelector('input[name=qa]:checked');
-  if(sel)quizSession.answers[quizSession.idx]=(Number(sel.value)===quizSession.qs[quizSession.idx].a);
+  if(sel&&!quizSession.revealed[quizSession.idx]){quizSession.picked[quizSession.idx]=Number(sel.value);quizSession.answers[quizSession.idx]=(Number(sel.value)===quizSession.qs[quizSession.idx].a)}
   if(quizSession.idx<quizSession.qs.length-1){quizSession.idx++;showQuizQuestion()}
   else{quizSession.idx=quizSession.qs.length;showQuizQuestion()}
 }
