@@ -5,6 +5,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Quiz
+import androidx.compose.material.icons.filled.Science
 import androidx.compose.material.icons.filled.Style
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -17,6 +18,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -35,21 +37,24 @@ fun BiostatApp(content: CourseContent, store: ProgressStore) {
     val nav = rememberNavController()
     val entry by nav.currentBackStackEntryAsState()
     val route = entry?.destination?.route.orEmpty()
+    val ta = store.tamil
     val tabs = listOf(
-        Tab("home", "Home", Icons.Filled.Home),
-        Tab("lessons", "Lessons", Icons.AutoMirrored.Filled.MenuBook),
-        Tab("quiz", "Quiz", Icons.Filled.Quiz),
-        Tab("cards", "Cards", Icons.Filled.Style)
+        Tab("home", if (ta) "முகப்பு" else "Home", Icons.Filled.Home),
+        Tab("lessons", if (ta) "பாடங்கள்" else "Lessons", Icons.AutoMirrored.Filled.MenuBook),
+        Tab("quiz", if (ta) "வினாடி வினா" else "Quiz", Icons.Filled.Quiz),
+        Tab("cards", if (ta) "அட்டைகள்" else "Cards", Icons.Filled.Style),
+        Tab("lab", if (ta) "ஆய்வகம்" else "Lab", Icons.Filled.Science)
     )
+    CompositionLocalProvider(LocalTamil provides ta) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Biostatistics Mastery") },
+                title = { Text(if (ta) "உயிரிப் புள்ளியியல்" else "Biostatistics Mastery") },
                 actions = {
                     FilterChip(
                         selected = store.tamil,
                         onClick = { store.toggleTamil() },
-                        label = { Text("தமிழ்") },
+                        label = { Text(if (ta) "English" else "தமிழ்") },
                         modifier = Modifier.padding(end = 8.dp)
                     )
                 },
@@ -62,7 +67,8 @@ fun BiostatApp(content: CourseContent, store: ProgressStore) {
         bottomBar = {
             NavigationBar {
                 tabs.forEach { t ->
-                    val selected = route == t.route || (t.route == "lessons" && route.startsWith("lesson/"))
+                    val selected = route == t.route || (t.route == "lessons" && route.startsWith("lesson/")) ||
+                        (t.route == "lab" && route.startsWith("lab/"))
                     NavigationBarItem(
                         selected = selected,
                         onClick = {
@@ -97,6 +103,14 @@ fun BiostatApp(content: CourseContent, store: ProgressStore) {
             }
             composable("quiz") { QuizScreen(content, store) }
             composable("cards") { FlashcardScreen(content, store) }
+            composable("lab") { LabHubScreen(onOpen = { nav.navigate(it) }) }
+            composable("lab/tools") { com.gasc.zoology.biostat.lab.ToolListScreen(onOpen = { nav.navigate("lab/tool/$it") }) }
+            composable("lab/tree") { com.gasc.zoology.biostat.lab.DecisionTreeScreen(onOpenTool = { nav.navigate("lab/tool/$it") }) }
+            composable("lab/visuals") { com.gasc.zoology.biostat.lab.VisualsScreen() }
+            composable("lab/data") { com.gasc.zoology.biostat.lab.DataLabScreen(onOpenLesson = { nav.navigate("lesson/$it") }) }
+            composable("lab/progress") { ProgressScreen(content, store) }
+            composable("lab/tool/{id}") { b -> com.gasc.zoology.biostat.lab.ToolScreen(b.arguments?.getString("id").orEmpty()) }
         }
+    }
     }
 }
