@@ -244,6 +244,44 @@ fun anova(g: List<List<Double>>): AnovaResult {
     return AnovaResult(k, n, means, g.map { sd(it) }, g.map { it.size }, grand, ssb, ssw, df1, df2, msb, msw, f, p, eta)
 }
 
+/**
+ * Welch heteroscedastic one-way ANOVA (independent groups).
+ * F = [sum(w_i (mean_i - weightedMean)^2)/(k-1)] /
+ *     [1 + 2(k-2)/(k^2-1) * sum((1-w_i/W)^2/(n_i-1))];
+ * df2 = (k^2-1)/(3*sum((1-w_i/W)^2/(n_i-1))).
+ * Match against scipy.stats.f_oneway(..., equal_var=false).
+ */
+data class WelchAnovaResult(
+    val f: Double, val p: Double, val df1: Int, val df2: Double,
+    val means: List<Double>, val ns: List<Int>, val variances: List<Double>,
+    val grandWeighted: Double
+)
+
+fun welchAnova(groups: List<List<Double>>): WelchAnovaResult {
+    val k = groups.size
+    if (k < 2) throw StatException("needGroups", listOf(2))
+    if (groups.any { it.size < 2 }) throw StatException("needGroupSize", listOf(2))
+    val means = groups.map(::mean)
+    val ns = groups.map { it.size }
+    val variances = groups.map { variance(it) }
+    if (variances.any { !it.isFinite() || it <= 0.0 }) throw StatException("zeroWithin")
+    val weights = groups.indices.map { ns[it] / variances[it] }
+    val totalWeight = weights.sum()
+    if (!totalWeight.isFinite() || totalWeight <= 0.0) throw StatException("anovaUndefined")
+    val mw = weights.indices.sumOf { weights[it] * means[it] } / totalWeight
+    val correction = groups.indices.sumOf { i ->
+        val ratio = 1.0 - weights[i] / totalWeight
+        ratio * ratio / (ns[i] - 1.0)
+    }
+    if (!correction.isFinite() || correction <= 0.0) throw StatException("anovaUndefined")
+    val f = (groups.indices.sumOf { weights[it] * (means[it] - mw).pow(2) } / (k - 1)) /
+        (1.0 + 2.0 * (k - 2) * correction / (k.toDouble() * k - 1))
+    val df2 = (k.toDouble() * k - 1) / (3.0 * correction)
+    if (!f.isFinite() || !(df2 > 0)) throw StatException("anovaUndefined")
+    return WelchAnovaResult(f, Dist.fSurvival(f, (k - 1).toDouble(), df2), k - 1,
+        df2, means, ns, variances, mw)
+}
+
 data class EpiResult(val risk1: Double, val risk0: Double, val rd: Double, val rr: Double, val or: Double,
                      val rrLow: Double, val rrHigh: Double, val orLow: Double, val orHigh: Double,
                      val nnt: Double, val corrected: Boolean)
