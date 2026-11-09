@@ -153,7 +153,11 @@ fun RichLessonListScreen(
                 }
                 Card(
                     shape = RoundedCornerShape(15.dp),
-                    colors = CardDefaults.cardColors(containerColor = accent.copy(alpha = .10f).compositeOver(Color(0xFFFFFCF6))),
+                    colors = CardDefaults.cardColors(containerColor = when (u) {
+                        1 -> Color(0xFFEAF2FF); 2 -> Color(0xFFE5F6F1)
+                        3 -> Color(0xFFF3ECFB); 4 -> Color(0xFFFFF0DF)
+                        5 -> Color(0xFFEAF3FC); else -> Color(0xFFE7F5EB)
+                    }),
                     border = BorderStroke(1.dp, accent.copy(alpha = .25f)),
                     modifier = Modifier.fillMaxWidth()
                         .clickable {
