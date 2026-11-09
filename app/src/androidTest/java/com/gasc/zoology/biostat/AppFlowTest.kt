@@ -141,7 +141,7 @@ class AppFlowTest {
         val c = courseContent()
         tab(if (tamil) "பாடங்கள்" else "Lessons")
         for (l in c.lessons) {
-            waitTag("lesson-search")
+            rule.waitUntil(20000) { rule.onAllNodes(hasScrollToNodeAction()).fetchSemanticsNodes().isNotEmpty() }
             rule.onAllNodes(hasScrollToNodeAction())[0].performScrollToNode(hasTestTag("lesson-${l.id}"))
             tag("lesson-${l.id}")
             waitTag("bookmark")
