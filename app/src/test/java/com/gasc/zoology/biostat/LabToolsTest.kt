@@ -68,6 +68,19 @@ class LabToolsTest {
         assertTrue(tamilMessage.contains("வரையறுக்க"))
     }
 
+    @Test fun heteroscedasticAnovaWarningRecommendsWelchNotAutomaticRanks() {
+        val tool = TOOLS.first { it.id == "anova" }
+        val inputs = tool.defaults() + mapOf(
+            "g" to "1,1.1,1.2,1.3; 3,5,8,12,16; 4,4.1,4.2,4.3"
+        )
+        val en = tool.run(inputs, false).notes.joinToString(" ")
+        val ta = tool.run(inputs, true).notes.joinToString(" ")
+        assertTrue(en.contains("Welch one-way ANOVA"))
+        assertTrue(en.contains("Unequal spread alone does not justify Kruskal"))
+        assertTrue(ta.contains("வெல்ச்"))
+        assertTrue(ta.contains("காரணமல்ல"))
+    }
+
     @Test fun datasetsAnalyseInBothLanguages() {
         assertEquals(13, DATASETS.size)
         for (d in DATASETS) for (ta in listOf(false, true)) {
