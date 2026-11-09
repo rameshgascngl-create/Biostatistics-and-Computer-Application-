@@ -70,7 +70,7 @@ class AppFlowTest {
         tag("bookmark"); rule.onNodeWithText("★ Bookmarked").assertExists()
         rule.onNode(hasScrollAction()).performScrollToNode(hasTestTag("note"))
         rule.onNodeWithTag("note").performTextInput("my note"); rule.onNodeWithTag("note").assertTextContains("my note")
-        rule.onNode(hasScrollAction()).performScrollToNode(hasTestTag("complete"))
+        rule.onAllNodes(hasScrollToNodeAction())[0].performScrollToNode(hasTestTag("complete"))
         rule.onNodeWithTag("complete").performClick(); rule.onNodeWithText("Completed — tap to undo").assertExists()
     }
 
@@ -142,12 +142,12 @@ class AppFlowTest {
         tab(if (tamil) "பாடங்கள்" else "Lessons")
         for (l in c.lessons) {
             waitTag("lesson-search")
-            rule.onNode(hasScrollAction()).performScrollToNode(hasTestTag("lesson-${l.id}"))
+            rule.onAllNodes(hasScrollToNodeAction())[0].performScrollToNode(hasTestTag("lesson-${l.id}"))
             tag("lesson-${l.id}")
             waitTag("bookmark")
             val title = if (tamil) c.tamilLessons.getValue(l.id).title else l.title
             rule.onAllNodesWithText(title).assertCountEquals(1)
-            rule.onNode(hasScrollAction()).performScrollToNode(hasTestTag("complete"))
+            rule.onAllNodes(hasScrollToNodeAction())[0].performScrollToNode(hasTestTag("complete"))
             rule.onNodeWithTag("complete").assertExists()
             back()
         }
